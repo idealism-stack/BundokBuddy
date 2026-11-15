@@ -511,10 +511,10 @@
                             <p id="hs-detail-dist" class="text-[10px] text-slate-500"><i class="fa-solid fa-location-dot text-budok-600 mr-1"></i></p>
                         </div>
                         <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar text-[10px] font-bold text-slate-700">
-                            <span class="px-2.5 py-1 rounded-xl bg-slate-100 border border-slate-200 shrink-0">👥 4 Guests</span>
-                            <span class="px-2.5 py-1 rounded-xl bg-slate-100 border border-slate-200 shrink-0">🛏️ 2 Bedrooms</span>
-                            <span class="px-2.5 py-1 rounded-xl bg-slate-100 border border-slate-200 shrink-0">🚿 1 Bathroom</span>
-                            <span class="px-2.5 py-1 rounded-xl bg-slate-100 border border-slate-200 shrink-0">🍳 Equipped Kitchen</span>
+                            <button onclick="openAmenityDetail('guests')" class="px-2.5 py-1 rounded-xl bg-slate-100 border border-slate-200 shrink-0 hover:border-budok-500 hover:bg-budok-50 transition-all cursor-pointer">👥 4 Guests</button>
+                            <button onclick="openAmenityDetail('bedrooms')" class="px-2.5 py-1 rounded-xl bg-slate-100 border border-slate-200 shrink-0 hover:border-budok-500 hover:bg-budok-50 transition-all cursor-pointer">🛏️ 2 Bedrooms</button>
+                            <button onclick="openAmenityDetail('bathroom')" class="px-2.5 py-1 rounded-xl bg-slate-100 border border-slate-200 shrink-0 hover:border-budok-500 hover:bg-budok-50 transition-all cursor-pointer">🚿 1 Bathroom</button>
+                            <button onclick="openAmenityDetail('kitchen')" class="px-2.5 py-1 rounded-xl bg-slate-100 border border-slate-200 shrink-0 hover:border-budok-500 hover:bg-budok-50 transition-all cursor-pointer">🍳 Equipped Kitchen</button>
                         </div>
                         <div class="flex border-b border-slate-200 text-xs font-bold text-slate-500">
                             <button onclick="switchHsSubTab('details')" id="hs-tab-details" class="py-2 px-3 border-b-2 border-budok-600 text-budok-800 font-extrabold">Details</button>
@@ -1045,6 +1045,24 @@
     </div>
 </div>
 
+    <!-- AMENITY DETAIL MODAL -->
+<div id="amenity-modal" class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-end justify-center hidden">
+    <div class="bg-white w-full max-w-md rounded-t-3xl border-t border-slate-200 p-5 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+            <div class="flex items-center gap-2">
+                <div id="amenity-modal-icon" class="w-9 h-9 rounded-xl bg-budok-100 text-budok-700 flex items-center justify-center text-base">👥</div>
+                <div>
+                    <h3 id="amenity-modal-title" class="font-bold text-slate-900 text-sm">4 Guests</h3>
+                    <p id="amenity-modal-subtitle" class="text-[10px] text-slate-500">Maximum capacity for this homestay</p>
+                </div>
+            </div>
+            <button onclick="closeAmenityDetail()" class="text-slate-400 hover:text-slate-700"><i class="fa-solid fa-xmark text-base"></i></button>
+        </div>
+        <div id="amenity-modal-body" class="space-y-2 text-xs"></div>
+        <button onclick="closeAmenityDetail()" class="w-full py-2.5 rounded-xl bg-budok-600 text-white font-bold text-xs shadow-md">Got it</button>
+    </div>
+</div>
+
     <div id="toast-container" class="fixed bottom-16 inset-x-4 z-50 space-y-2 pointer-events-none flex flex-col items-center"></div>
 
     <script>
@@ -1568,6 +1586,108 @@
             }
 
         let selectedTransportMode = 'habal-habal';
+
+        // ============================================================
+// HOMESTAY AMENITY DETAILS
+// ============================================================
+const AMENITY_DETAILS = {
+    guests: {
+        icon: "👥",
+        title: "4 Guests",
+        subtitle: "Maximum capacity for this homestay",
+        body: `
+            <div class="p-3 rounded-2xl bg-budok-50 border border-budok-200 space-y-1">
+                <span class="font-bold text-budok-900 block text-[11px]">Sleeping Arrangement</span>
+                <ul class="text-[10px] text-slate-700 space-y-1">
+                    <li>• 1 Queen Bed (2 guests)</li>
+                    <li>• 2 Single Beds (2 guests)</li>
+                    <li>• Extra mattress available on request (₱150)</li>
+                </ul>
+            </div>
+            <div class="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
+                <span class="font-bold text-slate-900 block text-[11px]">House Policy</span>
+                <p class="text-[10px] text-slate-600">Children under 5 stay free. Max 2 additional guests with prior host approval.</p>
+            </div>
+        `
+    },
+    bedrooms: {
+        icon: "🛏️",
+        title: "2 Bedrooms",
+        subtitle: "Private bedrooms with mountain views",
+        body: `
+            <div class="p-3 rounded-2xl bg-budok-50 border border-budok-200 space-y-1">
+                <span class="font-bold text-budok-900 block text-[11px]">Bedroom 1 — Master</span>
+                <ul class="text-[10px] text-slate-700 space-y-1">
+                    <li>• Queen bed with memory foam</li>
+                    <li>• Mountain-facing window</li>
+                    <li>• Reading lamp & wooden desk</li>
+                </ul>
+            </div>
+            <div class="p-3 rounded-2xl bg-budok-50 border border-budok-200 space-y-1">
+                <span class="font-bold text-budok-900 block text-[11px]">Bedroom 2 — Twin</span>
+                <ul class="text-[10px] text-slate-700 space-y-1">
+                    <li>• Two single beds</li>
+                    <li>• Shared wardrobe</li>
+                    <li>• Blackout curtains</li>
+                </ul>
+            </div>
+        `
+    },
+    bathroom: {
+        icon: "🚿",
+        title: "1 Bathroom",
+        subtitle: "Shared bathroom with hot shower",
+        body: `
+            <div class="p-3 rounded-2xl bg-budok-50 border border-budok-200 space-y-1">
+                <span class="font-bold text-budok-900 block text-[11px]">Bathroom Essentials</span>
+                <ul class="text-[10px] text-slate-700 space-y-1">
+                    <li>• Hot & cold shower</li>
+                    <li>• Fresh towels & toiletries provided</li>
+                    <li>• Hair dryer on request</li>
+                </ul>
+            </div>
+            <div class="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
+                <span class="font-bold text-slate-900 block text-[11px]">Note</span>
+                <p class="text-[10px] text-slate-600">Shared with host family. Scheduled cleaning 10:00 AM daily.</p>
+            </div>
+        `
+    },
+    kitchen: {
+        icon: "🍳",
+        title: "Equipped Kitchen",
+        subtitle: "Shared kitchen with local cooking essentials",
+        body: `
+            <div class="p-3 rounded-2xl bg-budok-50 border border-budok-200 space-y-1">
+                <span class="font-bold text-budok-900 block text-[11px]">Available Appliances</span>
+                <ul class="text-[10px] text-slate-700 space-y-1">
+                    <li>• Gas stove & cooking pots</li>
+                    <li>• Refrigerator (shared)</li>
+                    <li>• Rice cooker & kettle</li>
+                    <li>• Dining table for 4</li>
+                </ul>
+            </div>
+            <div class="p-3 rounded-2xl bg-amber-50 border border-amber-200 space-y-1">
+                <span class="font-bold text-amber-800 block text-[11px]">🥘 Optional Local Breakfast</span>
+                <p class="text-[10px] text-amber-700">Add traditional Bukidnon breakfast (₱180/pax) — includes sikwate, budbud, and local coffee.</p>
+                <button onclick="showToast('Breakfast added to booking!', 'success'); closeAmenityDetail();" class="mt-1 px-3 py-1 rounded-lg bg-amber-600 text-white font-bold text-[10px]">+ Add Breakfast</button>
+            </div>
+        `
+    }
+};
+
+function openAmenityDetail(type) {
+    const data = AMENITY_DETAILS[type];
+    if (!data) return;
+    document.getElementById('amenity-modal-icon').innerText = data.icon;
+    document.getElementById('amenity-modal-title').innerText = data.title;
+    document.getElementById('amenity-modal-subtitle').innerText = data.subtitle;
+    document.getElementById('amenity-modal-body').innerHTML = data.body;
+    document.getElementById('amenity-modal').classList.remove('hidden');
+}
+
+function closeAmenityDetail() {
+    document.getElementById('amenity-modal').classList.add('hidden');
+}
 
 
 
