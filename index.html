@@ -1,0 +1,2333 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-900 text-slate-800">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BundokBuddy - Your All-in-One Mindanao Hiking Companion</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        budok: {
+                            50: '#f0fdf4', 100: '#dcfce7', 200: '#bbf7d0', 300: '#86efac',
+                            400: '#4ade80', 500: '#22c55e', 600: '#16a34a', 700: '#15803d',
+                            800: '#166534', 900: '#14532d', dark: '#0a2e1a',
+                            earth: '#78350f', sand: '#fef3c7'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        * { -webkit-tap-highlight-color: transparent; user-select: none; }
+        input, textarea, select { user-select: text; }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .white-card { background: #ffffff; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.05); }
+        .white-card-hover:active { border-color: #22c55e; transform: scale(0.98); }
+        .phone-container {
+            width: 100%; max-width: 412px; height: 100%; max-height: 870px;
+            border-radius: 48px;
+            box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.25), 0 0 0 12px #0f172a, 0 0 0 14px #1e293b;
+            overflow: hidden; position: relative;
+        }
+        body.full-mode .phone-container { max-width: 100% !important; max-height: 100% !important; border-radius: 0 !important; box-shadow: none !important; }
+        body.full-mode .phone-notch { display: none !important; }
+        @keyframes radar-pulse { 0% { transform: scale(0.6); opacity: 0.9; } 100% { transform: scale(2.2); opacity: 0; } }
+        .radar-pulse-ring { animation: radar-pulse 2s infinite ease-out; }
+    </style>
+</head>
+
+<body class="h-full flex flex-col items-center justify-center font-sans bg-slate-900 text-slate-800 antialiased p-0 sm:p-4 selection:bg-budok-600 selection:text-white">
+
+    <header class="w-full max-w-md hidden sm:flex items-center justify-between mb-3 px-2 text-xs">
+        <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-budok-500 animate-pulse"></span>
+            <span class="font-bold text-slate-200">BundokBuddy Smartphone Prototype</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <button onclick="togglePhoneMode()" id="view-mode-btn"
+                class="px-3 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[11px] font-semibold flex items-center gap-1.5 transition-all">
+                <i class="fa-solid fa-mobile-screen"></i> <span>Expand to Full View</span>
+            </button>
+        </div>
+    </header>
+
+    <div class="phone-container flex flex-col bg-slate-50 border border-slate-200">
+
+        <div class="phone-notch shrink-0 bg-slate-900 pt-2 px-6 flex items-center justify-between text-[11px] font-bold text-slate-200 select-none z-50">
+            <span id="mobile-clock">16:57</span>
+            <div class="w-24 h-4 bg-slate-950 rounded-full border border-slate-800 flex items-center justify-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-slate-900"></span>
+                <span class="w-1.5 h-1.5 rounded-full bg-budok-500/90"></span>
+            </div>
+            <div class="flex items-center gap-1.5 text-[10px]">
+                <i class="fa-solid fa-signal"></i>
+                <i class="fa-solid fa-wifi"></i>
+                <i class="fa-solid fa-battery-full text-budok-400"></i>
+            </div>
+        </div>
+
+        <header id="app-header"
+            class="hidden sticky top-0 z-40 w-full border-b border-slate-200 bg-white/95 backdrop-blur-md px-4 py-2.5 flex items-center justify-between gap-2 shadow-sm">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="navigateTo('home')">
+                <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-budok-600 to-budok-800 flex items-center justify-center text-white shadow-md shadow-budok-900/20">
+                    <i class="fa-solid font-bold fa-mountain text-sm"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="font-black text-base tracking-tight text-budok-900">BundokBuddy</span>
+                        <span class="text-[8px] font-extrabold px-1.5 py-0.2 rounded-full bg-budok-100 text-budok-700 border border-budok-200">BUKIDNON</span>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+                <button onclick="getUserLocation()" title="GPS Near Me" class="p-2 rounded-xl bg-slate-100 border border-slate-200 text-budok-700 hover:bg-slate-200 text-xs">
+                    <i class="fa-solid fa-location-crosshairs"></i>
+                </button>
+                <button onclick="togglePrivacySettingsModal()" title="Location Sharing Settings" class="p-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200 text-xs relative">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <span id="header-sharing-indicator" class="hidden absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-budok-500 animate-ping"></span>
+                </button>
+                <button onclick="navigateTo('profile')" class="w-8 h-8 rounded-full bg-budok-100 border border-budok-300 text-budok-800 font-bold text-xs flex items-center justify-center">
+                    <span id="user-avatar-initials">JV</span>
+                </button>
+            </div>
+        </header>
+
+        <div id="sharing-banner" class="hidden bg-budok-700 text-white text-[10px] px-3 py-1.5 flex items-center justify-between z-30 shrink-0">
+            <div class="flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-emerald-300 animate-ping"></span>
+                <span><b>Location Sharing is ON</b> &bull; Visible to nearby hikers</span>
+            </div>
+            <button onclick="stopSharingLocation()" class="underline font-bold hover:text-slate-200">Stop Sharing</button>
+        </div>
+
+        <main class="flex-1 overflow-y-auto no-scrollbar relative" id="main-container">
+
+            <!-- SCREEN 0A: SPLASH -->
+            <div id="view-splash" class="h-full flex flex-col items-center justify-between p-8 bg-gradient-to-b from-budok-900 via-budok-800 to-budok-dark text-white text-center">
+                <div class="my-auto space-y-6">
+                    <div class="w-20 h-20 rounded-3xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center mx-auto shadow-2xl shadow-budok-900/50">
+                        <i class="fa-solid fa-mountain-sun text-4xl text-budok-300"></i>
+                    </div>
+                    <div class="space-y-2">
+                        <h1 class="text-3xl font-black tracking-tight text-white">BundokBuddy</h1>
+                        <p class="text-budok-200 text-xs font-medium max-w-xs mx-auto leading-relaxed">Your Buddy Before, During, and After Every Hike.</p>
+                    </div>
+                    <div class="pt-6"><div class="w-8 h-8 border-4 border-budok-400 border-t-transparent rounded-full animate-spin mx-auto"></div></div>
+                </div>
+                <p class="text-[10px] text-budok-300/70 font-semibold">Complete Bukidnon & Mindanao Outdoor Platform</p>
+            </div>
+
+            <!-- SCREEN 0A.5: ROLE SELECTION -->
+            <div id="view-role-selection" class="min-h-full p-6 bg-slate-50 flex flex-col items-center justify-start pt-10 hidden space-y-6">
+                <div class="w-36 h-36 rounded-[2rem] overflow-hidden shadow-xl border-4 border-budok-700 bg-budok-900 flex items-center justify-center">
+                    <img src="logo.jpg" alt="BundokBuddy Logo" class="w-full h-full object-cover">
+                </div>
+                <div class="text-center space-y-1">
+                    <h1 class="text-2xl font-black text-budok-900 tracking-tight">BundokBuddy</h1>
+                    <p class="text-slate-500 font-semibold text-sm">Bukidnon, Philippines</p>
+                </div>
+                <div class="w-full max-w-xs space-y-3 mt-4">
+                    <button onclick="selectRole('User')" class="w-full py-3.5 rounded-full bg-budok-600 hover:bg-budok-700 text-white font-bold text-sm shadow-md shadow-budok-600/20 transition-all">User</button>
+                    <button onclick="selectRole('Transportation')" class="w-full py-3.5 rounded-full bg-budok-600 hover:bg-budok-700 text-white font-bold text-sm shadow-md shadow-budok-600/20 transition-all">Transportation</button>
+                    <button onclick="selectRole('Homestay Owner')" class="w-full py-3.5 rounded-full bg-budok-600 hover:bg-budok-700 text-white font-bold text-sm shadow-md shadow-budok-600/20 transition-all">Homestay Owner</button>
+                    <button onclick="selectRole('Tourism Management/Tourism Office')" class="w-full py-3.5 rounded-full bg-budok-600 hover:bg-budok-700 text-white font-bold text-sm shadow-md shadow-budok-600/20 transition-all">Tourism Office</button>
+                    <button onclick="selectRole('Emergency or Government Response')" class="w-full py-3.5 rounded-full bg-budok-600 hover:bg-budok-700 text-white font-bold text-sm shadow-md shadow-budok-600/20 transition-all">Emergency / LGU</button>
+                    <button onclick="selectRole('System Administration')" class="w-full py-3.5 rounded-full bg-budok-600 hover:bg-budok-700 text-white font-bold text-sm shadow-md shadow-budok-600/20 transition-all">System Administration</button>
+                </div>
+            </div>
+
+            <!-- SCREEN 0B: LOGIN / REGISTER -->
+            <div id="view-auth" class="min-h-full p-6 bg-slate-50 flex flex-col justify-between hidden space-y-6">
+                <div class="space-y-6 pt-4">
+                    <div class="text-center space-y-2">
+                        <div class="w-12 h-12 rounded-2xl bg-budok-600 text-white flex items-center justify-center mx-auto shadow-lg shadow-budok-600/30">
+                            <i class="fa-solid fa-mountain text-xl"></i>
+                        </div>
+                        <h2 class="text-2xl font-black text-slate-900 tracking-tight">Welcome to BundokBuddy</h2>
+                        <p class="text-slate-500 text-xs">Your all-in-one Bukidnon & Mindanao hiking companion.</p>
+                    </div>
+                    <div class="flex rounded-2xl bg-slate-200 p-1 text-xs font-bold">
+                        <button onclick="switchAuthTab('login')" id="auth-tab-login" class="w-1/2 py-2 rounded-xl bg-white text-slate-900 shadow-sm">Log In</button>
+                        <button onclick="switchAuthTab('register')" id="auth-tab-register" class="w-1/2 py-2 rounded-xl text-slate-500">Register</button>
+                    </div>
+                    <form id="auth-form-login" onsubmit="handleLoginSubmit(event)" class="space-y-3 text-xs">
+                        <div>
+                            <label class="block text-slate-600 font-semibold mb-1">Email Address</label>
+                            <input type="email" required value="juan.hiker@bundokbuddy.ph" class="w-full bg-white border border-slate-300 rounded-xl p-3 text-slate-800 focus:outline-none focus:border-budok-600">
+                        </div>
+                        <div>
+                            <label class="block text-slate-600 font-semibold mb-1">Password</label>
+                            <input type="password" required value="••••••••" class="w-full bg-white border border-slate-300 rounded-xl p-3 text-slate-800 focus:outline-none focus:border-budok-600">
+                        </div>
+                        <div class="text-right">
+                            <a href="#" onclick="showToast('Password reset email dispatched.', 'info')" class="text-budok-700 text-[11px] font-semibold hover:underline">Forgot Password?</a>
+                        </div>
+                        <button type="submit" class="w-full py-3.5 rounded-2xl bg-budok-600 hover:bg-budok-700 text-white font-bold text-xs shadow-md shadow-budok-600/20 transition-all">Log In to Dashboard</button>
+                    </form>
+                    <form id="auth-form-register" onsubmit="handleLoginSubmit(event)" class="space-y-3 text-xs hidden">
+                        <div><label class="block text-slate-600 font-semibold mb-1">Full Name</label><input type="text" required placeholder="Juan Dela Cruz" class="w-full bg-white border border-slate-300 rounded-xl p-2.5 text-slate-800"></div>
+                        <div><label class="block text-slate-600 font-semibold mb-1">Username</label><input type="text" required placeholder="@juan_hiker" class="w-full bg-white border border-slate-300 rounded-xl p-2.5 text-slate-800"></div>
+                        <div><label class="block text-slate-600 font-semibold mb-1">Email</label><input type="email" required placeholder="juan@example.com" class="w-full bg-white border border-slate-300 rounded-xl p-2.5 text-slate-800"></div>
+                        <div><label class="block text-slate-600 font-semibold mb-1">Emergency Contact Number *</label><input type="tel" required placeholder="+63 917 123 4567" class="w-full bg-white border border-slate-300 rounded-xl p-2.5 text-slate-800"></div>
+                        <button type="submit" class="w-full py-3.5 rounded-2xl bg-budok-600 hover:bg-budok-700 text-white font-bold text-xs shadow-md transition-all">Create Account</button>
+                    </form>
+                    <div class="relative flex py-2 items-center">
+                        <div class="flex-grow border-t border-slate-200"></div>
+                        <span class="shrink-0 mx-3 text-slate-400 text-[10px]">OR CONTINUE WITH</span>
+                        <div class="flex-grow border-t border-slate-200"></div>
+                    </div>
+                    <button onclick="handleLoginSubmit(event)" class="w-full py-3 rounded-2xl bg-white border border-slate-300 text-slate-700 font-bold text-xs flex items-center justify-center gap-2 hover:bg-slate-50 transition-all">
+                        <i class="fa-brands fa-google text-red-500"></i> Continue with Google
+                    </button>
+                </div>
+                <p class="text-[10px] text-center text-slate-400">By logging in, you agree to BundokBuddy Outdoor Safety Protocols & Terms.</p>
+            </div>
+
+            <!-- VIEW 1: HOME -->
+            <div id="view-home" class="p-4 space-y-5 hidden">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="text-[11px] text-slate-500 font-medium">Good day, Hiker! 👋</span>
+                        <h1 class="text-xl font-extrabold text-slate-900 tracking-tight">Juan Dela Cruz</h1>
+                    </div>
+                    <button onclick="navigateTo('checklist')" class="p-2.5 rounded-2xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 relative shadow-sm">
+                        <i class="fa-solid fa-list-check text-sm text-budok-700"></i>
+                    </button>
+                </div>
+                <div class="grid grid-cols-4 gap-2 text-center text-[10px] font-bold">
+                    <button onclick="navigateTo('explore')" class="p-3 rounded-2xl white-card hover:bg-budok-50 hover:border-budok-300 transition-all flex flex-col items-center gap-1.5">
+                        <div class="w-8 h-8 rounded-xl bg-budok-100 text-budok-700 flex items-center justify-center text-sm"><i class="fa-solid fa-compass"></i></div>
+                        <span>Explore</span>
+                    </button>
+                    <button onclick="startHikeMode()" class="p-3 rounded-2xl white-card hover:bg-budok-50 hover:border-budok-300 transition-all flex flex-col items-center gap-1.5">
+                        <div class="w-8 h-8 rounded-xl bg-budok-600 text-white flex items-center justify-center text-sm"><i class="fa-solid fa-play"></i></div>
+                        <span class="text-budok-800">Start Hike</span>
+                    </button>
+                    <button onclick="navigateTo('hikers-map')" class="p-3 rounded-2xl white-card hover:bg-budok-50 hover:border-budok-300 transition-all flex flex-col items-center gap-1.5">
+                        <div class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-sm"><i class="fa-solid fa-users"></i></div>
+                        <span>Hikers Near</span>
+                    </button>
+                    <button onclick="openEmergencySOSHub()" class="p-3 rounded-2xl bg-red-500 text-white hover:bg-red-600 transition-all flex flex-col items-center gap-1.5 shadow-md shadow-red-500/20">
+                        <div class="w-8 h-8 rounded-xl bg-white/20 text-white flex items-center justify-center text-sm"><i class="fa-solid fa-triangle-exclamation animate-pulse"></i></div>
+                        <span class="text-white">SOS Hub</span>
+                    </button>
+                </div>
+                <div class="relative rounded-3xl overflow-hidden bg-gradient-to-br from-budok-800 via-budok-900 to-slate-900 text-white p-5 shadow-lg space-y-3">
+                    <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/10 border border-white/20 text-budok-300 text-[10px] font-bold">
+                        <i class="fa-solid fa-shield-heart"></i> Official Bukidnon Tourism Partner
+                    </div>
+                    <h2 class="text-lg font-black text-white leading-snug">Your Buddy Before, During, and After Every Hike.</h2>
+                    <p class="text-budok-100 text-xs leading-relaxed">Verified Bukidnon permits, local guides, homestays, transport, and live GPS map tracking in one app.</p>
+                    <div class="bg-white/10 backdrop-blur-md rounded-2xl p-2.5 flex items-center justify-between text-xs border border-white/10">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-cloud-sun text-amber-300 text-lg"></i>
+                            <div>
+                                <span class="font-bold block text-white text-[11px]">Bukidnon Mountain Weather</span>
+                                <span class="text-[9px] text-budok-200">22°C &bull; Clear Ridge & Peak Conditions</span>
+                            </div>
+                        </div>
+                        <button onclick="openWeatherModal()" class="px-2 py-0.5 rounded-md bg-budok-500 hover:bg-budok-400 text-white font-extrabold text-[9px] cursor-pointer transition-all">FAVORABLE ↗</button>
+                    </div>
+                </div>
+
+                <!-- SUBSCRIPTION UPGRADE BANNER -->
+                <div onclick="openSubscriptionModal()" class="relative rounded-3xl overflow-hidden bg-gradient-to-r from-amber-500 via-amber-600 to-orange-700 text-white p-4 cursor-pointer shadow-lg flex items-center justify-between">
+                    <div class="space-y-1">
+                        <span class="px-2 py-0.5 rounded-full bg-white/20 text-white font-extrabold text-[8px] uppercase tracking-wider">✨ Premium</span>
+                        <h3 class="text-sm font-black leading-tight">Unlock Unlimited Hikes</h3>
+                        <p class="text-[10px] text-amber-100">Priority rescue, offline maps, ad-free experience.</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center">
+                        <i class="fa-solid fa-crown text-2xl"></i>
+                    </div>
+                </div>
+
+                <div onclick="openHomestayDetail('mt-capistrano', 'hs-managok')"
+                    class="relative rounded-3xl overflow-hidden white-card p-4 border-budok-200 bg-gradient-to-r from-emerald-950/80 to-slate-900 text-white cursor-pointer hover:shadow-md transition-all">
+                    <img src="https://images.unsplash.com/photo-1587061949409-02df41d5e562?auto=format&fit=crop&w=800&q=80" class="absolute inset-0 w-full h-full object-cover opacity-35">
+                    <div class="relative z-10 space-y-1.5">
+                        <span class="px-2 py-0.5 rounded-full bg-budok-500 text-white font-extrabold text-[8px] uppercase tracking-wider">🏡 Stay Like a Local</span>
+                        <h3 class="text-sm font-black text-white leading-tight">Live Like a Traveler in Bukidnon</h3>
+                        <p class="text-[10px] text-budok-100 line-clamp-1">Explore authentic highland homestays, eco-cabins & campsites crafted for every trek.</p>
+                        <div class="flex items-center gap-2 pt-1">
+                            <span class="px-3 py-1 rounded-xl bg-white text-budok-900 font-extrabold text-[10px] shadow">Explore Homestays &rarr;</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-xs font-bold text-slate-800 uppercase tracking-wider">🏔️ Bukidnon Towns & Cities</h2>
+                        <button onclick="resetFilters(); navigateTo('explore');" class="text-[10px] text-budok-700 font-bold">Show All (18+)</button>
+                    </div>
+                    <div class="flex items-center gap-2 overflow-x-auto no-scrollbar text-[11px]">
+                        <button onclick="filterByTown('Malaybalay')" class="px-3 py-1.5 rounded-full bg-budok-600 text-white font-bold whitespace-nowrap shadow-sm">Malaybalay</button>
+                        <button onclick="filterByTown('Lantapan')" class="px-3 py-1.5 rounded-full bg-white border border-slate-300 text-slate-700 font-semibold whitespace-nowrap">Lantapan</button>
+                        <button onclick="filterByTown('Impasug-ong')" class="px-3 py-1.5 rounded-full bg-white border border-slate-300 text-slate-700 font-semibold whitespace-nowrap">Impasug-ong</button>
+                        <button onclick="filterByTown('Pangantucan')" class="px-3 py-1.5 rounded-full bg-white border border-slate-300 text-slate-700 font-semibold whitespace-nowrap">Pangantucan</button>
+                        <button onclick="filterByTown('Manolo Fortich')" class="px-3 py-1.5 rounded-full bg-white border border-slate-300 text-slate-700 font-semibold whitespace-nowrap">Manolo Fortich</button>
+                        <button onclick="filterByTown('Maramag')" class="px-3 py-1.5 rounded-full bg-white border border-slate-300 text-slate-700 font-semibold whitespace-nowrap">Maramag</button>
+                    </div>
+                </div>
+                <div class="white-card p-4 rounded-3xl space-y-3 border-budok-200 bg-budok-50/50">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="relative flex h-3 w-3">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-budok-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-3 w-3 bg-budok-500"></span>
+                            </span>
+                            <div>
+                                <h2 class="text-xs font-bold text-slate-900 uppercase tracking-wider">🥾 Hikers Nearby You</h2>
+                                <p class="text-[10px] text-slate-500">3 opted-in BundokBuddy hikers in Bukidnon</p>
+                            </div>
+                        </div>
+                        <button onclick="navigateTo('hikers-map')" class="px-2.5 py-1 rounded-xl bg-budok-600 text-white text-[10px] font-bold">View Map</button>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                        <div class="bg-white p-2 rounded-xl border border-slate-200"><span class="font-bold text-slate-800 block text-[11px]">Alex M.</span><span class="text-[9px] text-budok-700">Capistrano &bull; 1.2km</span></div>
+                        <div class="bg-white p-2 rounded-xl border border-slate-200"><span class="font-bold text-slate-800 block text-[11px]">Maria S.</span><span class="text-[9px] text-budok-700">Two Trees &bull; 2.5km</span></div>
+                        <div class="bg-white p-2 rounded-xl border border-slate-200"><span class="font-bold text-slate-800 block text-[11px]">Mark T.</span><span class="text-[9px] text-budok-700">Dulang-Dulang &bull; 4.1km</span></div>
+                    </div>
+                </div>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-sm font-bold text-slate-900 flex items-center gap-1.5"><i class="fa-solid fa-star text-amber-500"></i> Featured Bukidnon Spots</h2>
+                        <button onclick="navigateTo('explore')" class="text-[11px] text-budok-700 font-semibold">View All</button>
+                    </div>
+                    <div class="space-y-3" id="home-featured-grid"></div>
+                </div>
+                <div onclick="navigateTo('government')" class="white-card p-4 rounded-3xl flex items-center justify-between cursor-pointer hover:border-budok-400 transition-all">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center text-lg"><i class="fa-solid fa-landmark"></i></div>
+                        <div>
+                            <h3 class="text-xs font-bold text-slate-900">🏛️ Government & Tourism Offices</h3>
+                            <p class="text-[10px] text-slate-500">Verified Bukidnon Tourism Office & DENR-PASu contacts</p>
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-slate-400 text-xs"></i>
+                </div>
+            </div>
+
+            <!-- VIEW 2: EXPLORE -->
+            <div id="view-explore" class="p-4 space-y-5 hidden">
+                <div class="relative w-full">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                    <input type="text" id="global-search-input" onkeyup="filterMountains()" placeholder="Search Bukidnon peak, ridge, or town..."
+                        class="w-full bg-white border border-slate-300 rounded-2xl pl-9 pr-8 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-budok-600 shadow-sm">
+                    <button onclick="resetFilters()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs hover:text-slate-600"><i class="fa-solid fa-circle-xmark"></i></button>
+                </div>
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Categories</h2>
+                        <span class="text-[10px] text-slate-400">Swipe →</span>
+                    </div>
+                    <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+                        <button onclick="setCategoryFilter('Mountain')" class="shrink-0 px-3.5 py-2 rounded-2xl white-card flex items-center gap-2 text-xs font-bold text-slate-800 hover:border-budok-500"><span>🏔️</span> Mountains</button>
+                        <button onclick="setCategoryFilter('Ridge')" class="shrink-0 px-3.5 py-2 rounded-2xl white-card flex items-center gap-2 text-xs font-bold text-slate-800 hover:border-budok-500"><span>🌄</span> Ridges</button>
+                        <button onclick="setCategoryFilter('Peak')" class="shrink-0 px-3.5 py-2 rounded-2xl white-card flex items-center gap-2 text-xs font-bold text-slate-800 hover:border-budok-500"><span>⛰️</span> Peaks</button>
+                        <button onclick="setCategoryFilter('Nature Trail')" class="shrink-0 px-3.5 py-2 rounded-2xl white-card flex items-center gap-2 text-xs font-bold text-slate-800 hover:border-budok-500"><span>🌿</span> Nature Trails</button>
+                        <button onclick="setCategoryFilter('Waterfall Trail')" class="shrink-0 px-3.5 py-2 rounded-2xl white-card flex items-center gap-2 text-xs font-bold text-slate-800 hover:border-budok-500"><span>💧</span> Waterfalls</button>
+                    </div>
+                </div>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-sm font-bold text-slate-900 flex items-center gap-1.5"><i class="fa-solid fa-compass text-budok-700"></i> Bukidnon Trail Database</h2>
+                        <span class="text-[10px] text-slate-500"><span id="filtered-count">0</span> destinations</span>
+                    </div>
+                    <div class="space-y-3" id="all-hikes-grid"></div>
+                </div>
+            </div>
+
+            <!-- VIEW 3: HIKERS MAP -->
+            <div id="view-hikers-map" class="p-4 space-y-4 hidden">
+                <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+                    <div>
+                        <h1 class="text-lg font-bold text-slate-900 flex items-center gap-1.5"><i class="fa-solid fa-map-location-dot text-budok-600"></i> Bukidnon Map & Hikers</h1>
+                        <p class="text-slate-500 text-[10px]">Opted-in hikers, peaks, transport & offices</p>
+                    </div>
+                    <button onclick="togglePrivacySettingsModal()" class="px-2.5 py-1 rounded-xl bg-budok-100 text-budok-800 font-bold text-[10px]">Privacy Settings</button>
+                </div>
+                <div id="map-perspective-selector" class="flex items-center gap-1 overflow-x-auto no-scrollbar text-[10px] font-bold">
+                    <button data-perspective="standard" onclick="setMapPerspective('standard')" class="map-perspective-btn px-3 py-1.5 rounded-xl bg-budok-600 text-white shrink-0 transition-all">🗺️ Standard</button>
+                    <button data-perspective="satellite" onclick="setMapPerspective('satellite')" class="map-perspective-btn px-3 py-1.5 rounded-xl bg-white border border-slate-300 text-slate-700 shrink-0 transition-all">🛰️ Satellite</button>
+                    <button data-perspective="terrain" onclick="setMapPerspective('terrain')" class="map-perspective-btn px-3 py-1.5 rounded-xl bg-white border border-slate-300 text-slate-700 shrink-0 transition-all">🏔️ Terrain</button>
+                    <button data-perspective="3d" onclick="setMapPerspective('3d')" class="map-perspective-btn px-3 py-1.5 rounded-xl bg-white border border-slate-300 text-slate-700 shrink-0 transition-all">🧭 3D View</button>
+                </div>
+                <div class="bg-white p-3 rounded-2xl border border-slate-200 space-y-2 text-[10px]">
+                    <span class="font-bold text-slate-800 uppercase block tracking-wider">📍 Map Layers Toggle</span>
+                    <div class="grid grid-cols-3 gap-1.5 text-slate-700">
+                        <label class="flex items-center gap-1"><input type="checkbox" checked onchange="toggleMapLayer('mountains')" class="accent-budok-600"> 🏔️ Peaks</label>
+                        <label class="flex items-center gap-1"><input type="checkbox" checked onchange="toggleMapLayer('trailheads')" class="accent-budok-600"> 🥾 Trailheads</label>
+                        <label class="flex items-center gap-1"><input type="checkbox" checked onchange="toggleMapLayer('homestays')" class="accent-budok-600"> 🏡 Stays</label>
+                        <label class="flex items-center gap-1"><input type="checkbox" checked onchange="toggleMapLayer('transports')" class="accent-budok-600"> 🚐 Transport</label>
+                        <label class="flex items-center gap-1"><input type="checkbox" checked onchange="toggleMapLayer('government')" class="accent-budok-600"> 🏛️ Offices</label>
+                        <label class="flex items-center gap-1"><input type="checkbox" checked onchange="toggleMapLayer('emergency')" class="accent-budok-600"> 🚨 Emergency</label>
+                    </div>
+                </div>
+                <div id="hikers-nearby-leaflet-map" class="h-80 w-full rounded-3xl border border-slate-300 shadow-inner overflow-hidden z-10"></div>
+                <div class="bg-white p-3 rounded-2xl border border-slate-200 grid grid-cols-3 gap-2 text-[10px] text-slate-600">
+                    <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-budok-600"></span><span>🟢 Me</span></div>
+                    <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span><span>🥾 Opted-in Hiker</span></div>
+                    <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span><span>🏔️ Peak/Ridge</span></div>
+                    <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span><span>🏡 Homestay</span></div>
+                    <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-teal-500"></span><span>🚐 Transport</span></div>
+                    <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-red-500"></span><span>🏛️ Tourism Office</span></div>
+                </div>
+            </div>
+
+            <!-- VIEW 4: GOVERNMENT -->
+            <div id="view-government" class="p-4 space-y-4 hidden">
+                <div class="border-b border-slate-200 pb-3 flex items-center justify-between">
+                    <div>
+                        <h1 class="text-lg font-bold text-slate-900 flex items-center gap-1.5"><i class="fa-solid fa-landmark text-amber-700"></i> Government & Tourism</h1>
+                        <p class="text-slate-500 text-[10px]">Verified official offices, DENR-PASu & emergency authorities</p>
+                    </div>
+                    <button onclick="navigateTo('home')" class="text-xs text-slate-500 hover:text-slate-800"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="space-y-3" id="government-offices-grid"></div>
+            </div>
+
+            <!-- VIEW 5: MOUNTAIN DETAIL -->
+            <div id="view-detail" class="p-4 space-y-5 hidden">
+                <div class="flex items-center justify-between">
+                    <button onclick="navigateTo('explore')" class="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1.5 shadow-sm"><i class="fa-solid fa-arrow-left"></i> Back</button>
+                    <div class="flex items-center gap-2">
+                        <button id="detail-save-btn" onclick="toggleSaveCurrentMountain()" class="p-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs"><i class="fa-regular fa-bookmark"></i></button>
+                        <button onclick="openGuideModal()" class="px-3 py-1.5 rounded-xl bg-budok-600 text-white font-bold text-xs flex items-center gap-1 shadow-md shadow-budok-600/20"><i class="fa-solid fa-user-check"></i> Book Guide</button>
+                    </div>
+                </div>
+                <div class="relative rounded-3xl overflow-hidden white-card space-y-3">
+                    <div class="relative h-44 w-full bg-slate-200 overflow-hidden">
+                        <img id="detail-hero-image" src="" alt="Mountain Peak" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent"></div>
+                        <div class="absolute bottom-3 left-3 right-3 text-white">
+                            <div class="flex items-center gap-1.5 text-[9px] mb-1">
+                                <span id="detail-status-badge" class="px-2 py-0.5 rounded-full font-bold bg-budok-500 text-white">🟢 OPEN</span>
+                                <span id="detail-difficulty-badge" class="px-2 py-0.5 rounded-full font-bold bg-slate-800 text-white">INTERMEDIATE</span>
+                            </div>
+                            <h1 id="detail-name" class="text-xl font-black text-white leading-tight"></h1>
+                        </div>
+                    </div>
+                    <div class="p-4 space-y-3">
+                        <p id="detail-mountain-desc" class="text-slate-600 text-xs leading-relaxed"></p>
+                        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3 grid grid-cols-2 gap-3 text-xs">
+                            <div><span class="text-[9px] text-slate-400 uppercase font-bold block">Elevation</span><span id="detail-elevation" class="text-base font-black text-budok-800"></span></div>
+                            <div><span class="text-[9px] text-slate-400 uppercase font-bold block">Duration</span><span id="detail-duration" class="text-base font-black text-amber-700"></span></div>
+                            <div><span class="text-[9px] text-slate-400 uppercase font-bold block">Distance</span><span id="detail-distance" class="text-base font-black text-teal-700"></span></div>
+                            <div><span class="text-[9px] text-slate-400 uppercase font-bold block">Rating</span><span id="detail-rating" class="text-base font-black text-indigo-700"></span></div>
+                            <div><span class="text-[9px] text-slate-400 uppercase font-bold block">Location</span><span id="detail-municipality" class="text-xs font-bold text-slate-800"></span></div>
+                            <div><span class="text-[9px] text-slate-400 uppercase font-bold block">Coordinates</span><span id="detail-coords" class="text-[10px] font-bold text-slate-600"></span></div>
+                        </div>
+                        <button onclick="startHikeMode()" class="w-full py-3 rounded-2xl bg-budok-600 hover:bg-budok-700 text-white font-black text-xs shadow-md shadow-budok-600/20 transition-all flex items-center justify-center gap-2"><i class="fa-solid fa-play"></i> Start GPS Active Hike Navigation</button>
+                    </div>
+                </div>
+                <section class="white-card p-4 rounded-3xl space-y-3">
+                    <h2 class="text-xs font-bold text-slate-900 flex items-center gap-1.5 uppercase tracking-wider"><i class="fa-solid fa-route text-budok-600"></i> 🚐 How to Get There & Journey Flow</h2>
+                    <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 text-[11px] space-y-2 text-slate-700">
+                        <div class="flex items-center gap-2"><span class="w-5 h-5 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center text-[10px]">1</span><span><b>Your Location:</b> Malaybalay / Highway Terminal</span></div>
+                        <div class="border-l-2 border-slate-300 ml-2.5 pl-3 py-1 text-[10px] text-slate-500">Take Chartered Van / Tricycle / Habal-Habal</div>
+                        <div class="flex items-center gap-2"><span class="w-5 h-5 rounded-full bg-teal-100 text-teal-700 font-bold flex items-center justify-center text-[10px]">2</span><span><b>Starting Area:</b> Barangay / Tourism Registration Office</span></div>
+                        <div class="border-l-2 border-slate-300 ml-2.5 pl-3 py-1 text-[10px] text-slate-500">Register & meet assigned LGU / Ancestral Domain Guide</div>
+                        <div class="flex items-center gap-2"><span class="w-5 h-5 rounded-full bg-budok-100 text-budok-700 font-bold flex items-center justify-center text-[10px]">3</span><span><b>Trailhead:</b> Mountain Base Camp Entry</span></div>
+                    </div>
+                </section>
+                <section class="white-card p-4 rounded-3xl space-y-3">
+                    <h2 class="text-xs font-bold text-slate-900 flex items-center gap-1.5 uppercase tracking-wider"><i class="fa-solid fa-map text-budok-600"></i> 🗺️ Verified Trail Route & Landmarks</h2>
+                    <p id="detail-trail-desc" class="text-[11px] text-slate-600 leading-relaxed"></p>
+                    <div class="bg-budok-50/50 p-3 rounded-2xl border border-budok-200 text-xs space-y-2" id="detail-route-landmarks"></div>
+                    <div id="mountain-map" class="h-44 w-full rounded-2xl border border-slate-200 bg-slate-100 overflow-hidden z-10"></div>
+                </section>
+                <section class="white-card p-4 rounded-3xl space-y-3 text-xs">
+                    <h2 class="text-xs font-bold text-slate-900 flex items-center gap-1.5 uppercase tracking-wider"><i class="fa-solid fa-shield-cat text-amber-600"></i> 🌿 Permits & Cultural Protocols</h2>
+                    <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-1">
+                        <span class="font-bold text-amber-800 block text-[11px]">Bukidnon Tourism & PAMB Permits</span>
+                        <p id="detail-permit-info" class="text-slate-600 text-[10px] leading-relaxed"></p>
+                    </div>
+                </section>
+                <section class="white-card p-4 rounded-3xl space-y-3">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-xs font-black text-slate-900 flex items-center gap-1.5 uppercase tracking-wider"><i class="fa-solid fa-house text-amber-700 text-sm"></i> <span class="text-sm">🏡</span> NEARBY HOMESTAYS</h2>
+                        <span class="text-xs text-emerald-700 font-bold hover:underline cursor-pointer">Stay In Hub</span>
+                    </div>
+                    <div id="detail-homestays-cards" class="space-y-3"></div>
+                </section>
+                <section class="white-card p-4 rounded-3xl space-y-3">
+                    <h2 class="text-xs font-bold text-slate-900 flex items-center gap-1.5 uppercase tracking-wider"><i class="fa-solid fa-van-shuttle text-budok-700"></i> 🚐 Transportation Options</h2>
+                    <div id="detail-transport-cards" class="space-y-3"></div>
+                </section>
+                <section class="white-card p-4 rounded-3xl space-y-3">
+                    <h2 class="text-xs font-bold text-slate-900 flex items-center gap-1.5 uppercase tracking-wider"><i class="fa-solid fa-landmark text-amber-700"></i> 🏛️ Nearest Verified Tourism Office</h2>
+                    <div id="detail-agency-card" class="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-2 text-xs"></div>
+                </section>
+                <section class="white-card p-4 rounded-3xl space-y-3">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-xs font-bold text-slate-900 flex items-center gap-1.5 uppercase tracking-wider"><i class="fa-solid fa-person-hiking text-budok-600"></i> 🧭 Verified Local Guides</h2>
+                        <span class="text-[9px] bg-budok-100 text-budok-800 px-2 py-0.5 rounded-full font-bold">LGU Verified</span>
+                    </div>
+                    <div id="detail-guides-list" class="space-y-2"></div>
+                    <button onclick="openGuideModal()" class="w-full py-2.5 rounded-xl bg-budok-600 text-white font-bold text-xs shadow-md">Book Verified Local Guide</button>
+                </section>
+            </div>
+
+            <!-- VIEW 6: HOMESTAY DETAIL -->
+            <div id="view-homestay-detail" class="p-4 space-y-4 pb-20 hidden">
+                <div class="flex items-center justify-between">
+                    <button onclick="navigateTo('detail')" class="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1.5 shadow-sm"><i class="fa-solid fa-arrow-left"></i> Back to Hike</button>
+                    <span class="text-[10px] bg-budok-100 text-budok-800 px-2.5 py-1 rounded-full font-bold">✓ Verified Stay</span>
+                </div>
+                <div class="white-card rounded-3xl overflow-hidden space-y-3">
+                    <div class="relative h-48 w-full bg-slate-200">
+                        <img id="hs-detail-img-main" src="" class="w-full h-full object-cover">
+                        <span id="hs-floating-price-badge" class="absolute top-3 left-3 bg-budok-700/90 backdrop-blur-md text-white font-black text-xs px-2.5 py-1 rounded-full shadow-lg"></span>
+                        <button onclick="showToast('Added to Wishlist!', 'success')" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/80 backdrop-blur-md text-red-500 font-bold flex items-center justify-center shadow"><i class="fa-solid fa-heart"></i></button>
+                    </div>
+                    <div class="px-4 flex items-center gap-2 overflow-x-auto no-scrollbar" id="hs-gallery-thumbs"></div>
+                    <div class="p-4 space-y-3">
+                        <div>
+                            <h1 id="hs-detail-name" class="text-lg font-black text-slate-900"></h1>
+                            <p id="hs-detail-dist" class="text-[10px] text-slate-500"><i class="fa-solid fa-location-dot text-budok-600 mr-1"></i></p>
+                        </div>
+                        <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar text-[10px] font-bold text-slate-700">
+                            <span class="px-2.5 py-1 rounded-xl bg-slate-100 border border-slate-200 shrink-0">👥 4 Guests</span>
+                            <span class="px-2.5 py-1 rounded-xl bg-slate-100 border border-slate-200 shrink-0">🛏️ 2 Bedrooms</span>
+                            <span class="px-2.5 py-1 rounded-xl bg-slate-100 border border-slate-200 shrink-0">🚿 1 Bathroom</span>
+                            <span class="px-2.5 py-1 rounded-xl bg-slate-100 border border-slate-200 shrink-0">🍳 Equipped Kitchen</span>
+                        </div>
+                        <div class="flex border-b border-slate-200 text-xs font-bold text-slate-500">
+                            <button onclick="switchHsSubTab('details')" id="hs-tab-details" class="py-2 px-3 border-b-2 border-budok-600 text-budok-800 font-extrabold">Details</button>
+                            <button onclick="switchHsSubTab('amenities')" id="hs-tab-amenities" class="py-2 px-3">Amenities</button>
+                            <button onclick="switchHsSubTab('reviews')" id="hs-tab-reviews" class="py-2 px-3">Reviews (4.9)</button>
+                        </div>
+                        <div id="hs-sub-details" class="space-y-3">
+                            <p id="hs-detail-desc" class="text-xs text-slate-600 leading-relaxed"></p>
+                            <div class="grid grid-cols-2 gap-2 text-[10px] bg-slate-50 p-2.5 rounded-2xl border border-slate-200">
+                                <div><b>Check-in:</b> <span id="hs-checkin">14:00</span></div>
+                                <div><b>Check-out:</b> <span id="hs-checkout">12:00</span></div>
+                                <div><b>House Rules:</b> Respect Quiet Hours</div>
+                                <div><b>Host:</b> Local Family</div>
+                            </div>
+                            <div class="space-y-2">
+                                <span class="text-xs font-bold text-slate-900 uppercase block tracking-wider">📍 Map & Distance to Trailhead</span>
+                                <div id="homestay-leaflet-map" class="h-36 w-full rounded-2xl border border-slate-200 bg-slate-100 overflow-hidden z-10"></div>
+                            </div>
+                        </div>
+                        <div id="hs-sub-amenities" class="grid grid-cols-2 gap-2 text-xs hidden">
+                            <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2"><i class="fa-solid fa-wifi text-budok-600"></i> High-Speed WiFi</div>
+                            <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2"><i class="fa-solid fa-shower text-budok-600"></i> Hot Shower</div>
+                            <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2"><i class="fa-solid fa-fire text-amber-600"></i> Outdoor Bonfire Pit</div>
+                            <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2"><i class="fa-solid fa-utensils text-budok-600"></i> Home Kitchen</div>
+                            <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2"><i class="fa-solid fa-square-parking text-budok-600"></i> Free Parking</div>
+                            <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2"><i class="fa-solid fa-mountain text-budok-600"></i> Mountain View Deck</div>
+                        </div>
+                        <div id="hs-sub-reviews" class="space-y-2 text-xs hidden">
+                            <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                                <div class="flex items-center justify-between font-bold"><span>Mark S.</span><span class="text-amber-500">⭐ 5.0</span></div>
+                                <p class="text-[10px] text-slate-600">Wake up to mountain air and slow mornings! Warm hospitality and clean rooms.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="pt-3 border-t border-slate-200 mt-2">
+                    <button onclick="handleHomestayBookingSubmit(event)" class="w-full py-3 rounded-2xl bg-budok-600 hover:bg-budok-700 text-white font-black text-sm shadow-md shadow-budok-600/30 transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-calendar-check"></i> Book This Homestay
+                    </button>
+                    <p class="text-[9px] text-center text-slate-400 mt-2">Free cancellation up to 24 hours before check-in</p>
+                </div>
+                <div class="fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 p-3 flex items-center justify-between max-w-md mx-auto z-40 shadow-lg">
+                    <div>
+                        <span id="hs-detail-price-sticky" class="text-base font-black text-slate-900 block"></span>
+                        <span class="text-[9px] text-slate-400">Inclusive of all local taxes & fees</span>
+                    </div>
+                    <button id="hs-book-btn-sticky" onclick="handleHomestayBookingSubmit(event)" class="px-5 py-2.5 rounded-2xl bg-budok-600 hover:bg-budok-700 text-white font-black text-xs shadow-md shadow-budok-600/30 transition-all flex items-center gap-1.5">
+                        <i class="fa-solid fa-calendar-check"></i> Book Now
+                    </button>
+                </div>
+            </div>
+
+            <!-- VIEW 7: TRANSPORT DETAIL -->
+            <div id="view-transport-detail" class="p-4 space-y-5 hidden">
+                <div class="flex items-center justify-between">
+                    <button onclick="navigateTo('detail')" class="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1.5 shadow-sm"><i class="fa-solid fa-arrow-left"></i> Back to Hike</button>
+                    <span id="tr-verify-badge" class="text-[10px] bg-budok-100 text-budok-800 px-2.5 py-1 rounded-full font-bold">✓ VERIFIED DRIVER</span>
+                </div>
+                <div class="space-y-2">
+                    <span class="font-bold text-slate-900 uppercase text-xs block tracking-wider">Select Transport Mode</span>
+                    <div id="transport-mode-selector" class="grid grid-cols-4 gap-2 text-center text-[10px] font-bold">
+                        <button data-mode="habal-habal" onclick="selectTransportMode('habal-habal')" class="transport-mode-btn p-2 rounded-2xl white-card flex flex-col items-center gap-1 transition-all">
+                            <i class="fa-solid fa-motorcycle text-budok-600 text-base"></i>
+                            <span>Habal-Habal</span>
+                        </button>
+                        <button data-mode="van" onclick="selectTransportMode('van')" class="transport-mode-btn p-2 rounded-2xl white-card flex flex-col items-center gap-1 transition-all">
+                            <i class="fa-solid fa-van-shuttle text-teal-600 text-base"></i>
+                            <span>Aircon Van</span>
+                        </button>
+                        <button data-mode="multicab" onclick="selectTransportMode('multicab')" class="transport-mode-btn p-2 rounded-2xl white-card flex flex-col items-center gap-1 transition-all">
+                            <i class="fa-solid fa-bus text-amber-600 text-base"></i>
+                            <span>Multicab</span>
+                        </button>
+                        <button data-mode="tricycle" onclick="selectTransportMode('tricycle')" class="transport-mode-btn p-2 rounded-2xl white-card flex flex-col items-center gap-1 transition-all">
+                            <i class="fa-solid fa-car-side text-indigo-600 text-base"></i>
+                            <span>Tricycle</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="white-card rounded-3xl p-4 space-y-4">
+                    <div class="flex items-center gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-200">
+                        <img id="tr-driver-img" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80" class="w-12 h-12 rounded-full object-cover">
+                        <div>
+                            <h2 id="tr-driver-name" class="font-extrabold text-slate-900 text-sm">Datu Mario</h2>
+                            <span id="tr-driver-stats" class="text-[10px] text-slate-500 block">⭐ 4.9 &bull; 186 Verified Trips</span>
+                        </div>
+                    </div>
+                    <div class="bg-budok-50/50 p-3 rounded-2xl border border-budok-200 text-xs space-y-2">
+                        <span class="font-bold text-budok-900 block text-[11px]">🗺️ Travel Route Path</span>
+                        <div class="space-y-1.5 text-[10px] text-slate-700">
+                            <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0"></span><span><b>Your Location:</b> Malaybalay Terminal / Hotel</span></div>
+                            <div class="border-l-2 border-slate-300 ml-1 pl-3 text-slate-500">Direct Highway Route (~35 mins)</div>
+                            <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-budok-600 shrink-0"></span><span><b>Destination:</b> Mountain Trailhead Base Camp</span></div>
+                        </div>
+                    </div>
+                    <div class="space-y-2 text-xs">
+                        <span class="font-bold text-slate-900 uppercase block tracking-wider">Fare Comparison Tiers</span>
+                        <div class="grid grid-cols-2 gap-2 text-[10px]">
+                            <div class="p-2.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
+                                <span class="font-bold text-slate-800 block" id="tr-fare-economy-label">Economy / Shared</span>
+                                <span class="text-xs font-black text-budok-700 block" id="tr-fare-economy-price">₱60 / person</span>
+                                <span class="text-[9px] text-slate-400" id="tr-fare-economy-desc">Regular route dropoff</span>
+                            </div>
+                            <div class="p-2.5 rounded-2xl bg-budok-100/50 border border-budok-300 space-y-1">
+                                <span class="font-bold text-budok-900 block" id="tr-fare-private-label">Private Charter</span>
+                                <span class="text-xs font-black text-budok-800 block" id="tr-fare-private-price">₱250 direct</span>
+                                <span class="text-[9px] text-slate-500" id="tr-fare-private-desc">Express direct to trailhead</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="space-y-2 text-xs">
+                        <span class="font-bold text-slate-900 uppercase block tracking-wider">🚐 Vehicle Specs</span>
+                        <div class="relative h-36 w-full rounded-2xl overflow-hidden bg-slate-200">
+                            <img id="tr-vehicle-img" src="" class="w-full h-full object-cover">
+                        </div>
+                        <div id="tr-vehicle-desc" class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-[10px] text-slate-600"></div>
+                    </div>
+                    <div id="transport-leaflet-map" class="h-36 w-full rounded-2xl border border-slate-200 bg-slate-100 overflow-hidden z-10"></div>
+                    <form onsubmit="handleTransportBookingSubmit(event)" class="bg-budok-50/60 p-3 rounded-2xl border border-budok-200 space-y-2 text-xs">
+                        <span class="font-bold text-budok-900 block text-xs">🚐 Reserve Shuttle Service</span>
+                        <div>
+                            <label class="block text-slate-500 text-[9px]">Pickup Time</label>
+                            <input type="time" value="06:00" required class="w-full bg-white border border-slate-300 rounded-xl p-2 text-slate-800">
+                        </div>
+                        <button type="submit" class="w-full py-2.5 rounded-xl bg-budok-600 text-white font-bold text-xs shadow-md">Book Transport Service</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- VIEW 7.5: TOUR GUIDE DETAIL -->
+            <div id="view-guide-detail" class="p-4 space-y-5 pb-20 hidden">
+                <div class="flex items-center justify-between">
+                    <button onclick="navigateTo('detail')" class="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1.5 shadow-sm"><i class="fa-solid fa-arrow-left"></i> Back to Hike</button>
+                    <span class="text-[10px] bg-budok-100 text-budok-800 px-2.5 py-1 rounded-full font-bold">✓ LGU Accredited</span>
+                </div>
+                <div class="white-card rounded-3xl overflow-hidden">
+                    <div class="relative h-40 w-full bg-slate-200">
+                        <img id="gd-hero-img" src="" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-gradient-to-t from-slate-900/85 via-slate-900/30 to-transparent"></div>
+                        <div class="absolute bottom-3 left-3 right-3 text-white">
+                            <div class="flex items-center gap-1.5 text-[9px] mb-1">
+                                <span class="px-2 py-0.5 rounded-full font-bold bg-budok-500 text-white">🟢 AVAILABLE</span>
+                                <span class="px-2 py-0.5 rounded-full font-bold bg-amber-500 text-white">⭐ 4.9 RATED</span>
+                            </div>
+                            <h1 id="gd-name" class="text-lg font-black text-white leading-tight"></h1>
+                            <p id="gd-municipality" class="text-[10px] text-budok-100"></p>
+                        </div>
+                    </div>
+                    <div class="p-4 space-y-4">
+                        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3 grid grid-cols-3 gap-2 text-center text-xs">
+                            <div><span class="text-[9px] text-slate-400 uppercase font-bold block">Years Active</span><span id="gd-years" class="text-sm font-black text-budok-800"></span></div>
+                            <div><span class="text-[9px] text-slate-400 uppercase font-bold block">Total Summits</span><span id="gd-summits" class="text-sm font-black text-amber-700"></span></div>
+                            <div><span class="text-[9px] text-slate-400 uppercase font-bold block">Group Size</span><span id="gd-size" class="text-sm font-black text-teal-700"></span></div>
+                        </div>
+                        <div>
+                            <span class="text-xs font-bold text-slate-900 uppercase tracking-wider block mb-1">🧭 About the Guild</span>
+                            <p id="gd-desc" class="text-[11px] text-slate-600 leading-relaxed"></p>
+                        </div>
+                        <div>
+                            <span class="text-xs font-bold text-slate-900 uppercase tracking-wider block mb-2">⛰️ Trail Specialties</span>
+                            <div id="gd-specialties" class="flex flex-wrap gap-1.5"></div>
+                        </div>
+                    </div>
+                </div>
+                <section class="white-card p-4 rounded-3xl space-y-3">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-xs font-bold text-slate-900 flex items-center gap-1.5 uppercase tracking-wider"><i class="fa-solid fa-users text-budok-600"></i> 🧑‍🤝‍🧑 Verified Guild Members</h2>
+                        <span class="text-[9px] bg-budok-100 text-budok-800 px-2 py-0.5 rounded-full font-bold">12 Active</span>
+                    </div>
+                    <div id="gd-members-list" class="space-y-2"></div>
+                </section>
+                <section class="white-card p-4 rounded-3xl space-y-3">
+                    <h2 class="text-xs font-bold text-slate-900 flex items-center gap-1.5 uppercase tracking-wider"><i class="fa-solid fa-tags text-amber-600"></i> 💰 Guide Packages & Rates</h2>
+                    <div id="gd-packages-list" class="space-y-2"></div>
+                </section>
+                <section class="white-card p-4 rounded-3xl space-y-3">
+                    <h2 class="text-xs font-bold text-slate-900 flex items-center gap-1.5 uppercase tracking-wider"><i class="fa-solid fa-address-book text-budok-600"></i> 📞 Contact & Office Info</h2>
+                    <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 text-[11px] space-y-2 text-slate-700">
+                        <div class="flex items-start gap-2"><i class="fa-solid fa-location-dot text-budok-600 mt-0.5"></i><span id="gd-office"></span></div>
+                        <div class="flex items-start gap-2"><i class="fa-solid fa-phone text-budok-600 mt-0.5"></i><span id="gd-contact"></span></div>
+                        <div class="flex items-start gap-2"><i class="fa-solid fa-envelope text-budok-600 mt-0.5"></i><span id="gd-email"></span></div>
+                        <div class="flex items-start gap-2"><i class="fa-solid fa-clock text-budok-600 mt-0.5"></i><span id="gd-hours"></span></div>
+                    </div>
+                </section>
+                <div class="fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 p-3 flex items-center justify-between max-w-md mx-auto z-40 shadow-lg">
+                    <div>
+                        <span id="gd-fee" class="text-base font-black text-slate-900 block"></span>
+                        <span class="text-[9px] text-slate-400">Standard day guide rate</span>
+                    </div>
+                    <button onclick="openGuideModal()" class="px-5 py-2.5 rounded-2xl bg-budok-600 hover:bg-budok-700 text-white font-black text-xs shadow-md shadow-budok-600/30 transition-all flex items-center gap-1.5">
+                        <i class="fa-solid fa-user-check"></i> Book This Guide
+                    </button>
+                </div>
+            </div>
+
+            <!-- VIEW 8: HIKE TRACKER -->
+            <div id="view-hike-tracker" class="p-4 space-y-4 bg-slate-900 min-h-full text-slate-100 hidden">
+                <div class="flex items-center justify-between bg-slate-800/90 border border-budok-500/30 p-3 rounded-2xl">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-budok-400 animate-ping"></span>
+                        <div>
+                            <h1 class="text-xs font-bold text-white">HIGH-TECH GPS ACTIVE</h1>
+                            <p id="tracker-mountain-title" class="text-[10px] text-budok-300">Navigating Trail</p>
+                        </div>
+                    </div>
+                    <button onclick="stopHikeMode()" class="px-2.5 py-1 rounded-xl bg-red-500/20 text-red-400 text-[10px] font-bold">Exit Navigation</button>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-center text-xs">
+                    <div class="bg-slate-800 p-3 rounded-2xl border border-slate-700"><span class="text-[10px] text-slate-400">Elapsed Time</span><div id="tracker-timer" class="text-lg font-black text-white font-mono mt-0.5">00:14:32</div></div>
+                    <div class="bg-slate-800 p-3 rounded-2xl border border-slate-700"><span class="text-[10px] text-slate-400">Distance Covered</span><div id="tracker-distance" class="text-lg font-black text-budok-400 font-mono mt-0.5">2.4 km</div></div>
+                    <div class="bg-slate-800 p-3 rounded-2xl border border-slate-700"><span class="text-[10px] text-slate-400">Altitude</span><div id="tracker-alt" class="text-lg font-black text-amber-400 font-mono mt-0.5">620m</div></div>
+                    <div class="bg-slate-800 p-3 rounded-2xl border border-slate-700"><span class="text-[10px] text-slate-400">Heading Compass</span><div class="text-lg font-black text-teal-400 font-mono mt-0.5">NW 315°</div></div>
+                </div>
+                <div class="bg-slate-800 p-3 rounded-3xl space-y-2 border border-slate-700">
+                    <div class="flex items-center justify-between text-[10px]">
+                        <span class="font-bold text-slate-200">3D Trail Lock</span>
+                        <span class="text-budok-400 font-semibold">On-Route &bull; Deviation 0m</span>
+                    </div>
+                    <div id="tracker-map" class="h-64 w-full rounded-2xl border border-slate-700 bg-slate-950 overflow-hidden z-10"></div>
+                </div>
+                <div class="grid grid-cols-2 gap-2 pt-1">
+                    <button onclick="openEmergencySOSHub()" class="py-3 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-black text-xs shadow-lg flex items-center justify-center gap-1.5"><i class="fa-solid fa-triangle-exclamation"></i> SOS SIGNAL</button>
+                    <button onclick="finishHikeSimulation()" class="py-3 rounded-2xl bg-budok-500 hover:bg-budok-600 text-slate-950 font-black text-xs shadow-lg flex items-center justify-center gap-1.5"><i class="fa-solid fa-flag-checkered"></i> Log Summit</button>
+                </div>
+            </div>
+
+            <!-- VIEW 9: CHECKLIST -->
+            <div id="view-checklist" class="p-4 space-y-4 hidden">
+                <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+                    <div>
+                        <h1 class="text-lg font-bold text-slate-900 flex items-center gap-1.5"><i class="fa-solid fa-list-check text-budok-600"></i> Outdoor Gear Checklist</h1>
+                        <p class="text-slate-500 text-[10px]">Ensure safety before heading to the trailhead</p>
+                    </div>
+                    <button onclick="navigateTo('home')" class="text-xs text-slate-500 hover:text-slate-800"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="space-y-2 text-xs">
+                    <label class="flex items-center gap-2 p-3 rounded-2xl white-card"><input type="checkbox" checked class="w-4 h-4 accent-budok-600"><span class="text-slate-800 font-bold">Approved Bukidnon LGU / PAMB Permit</span></label>
+                    <label class="flex items-center gap-2 p-3 rounded-2xl white-card"><input type="checkbox" checked class="w-4 h-4 accent-budok-600"><span class="text-slate-800 font-bold">Minimum 2-3 Liters Water & Hydration Packs</span></label>
+                    <label class="flex items-center gap-2 p-3 rounded-2xl white-card"><input type="checkbox" class="w-4 h-4 accent-budok-600"><span class="text-slate-800 font-bold">Rain Jacket / Poncho & Trail Shoes</span></label>
+                </div>
+            </div>
+
+            <!-- VIEW 10: PROFILE -->
+            <div id="view-profile" class="p-4 space-y-5 hidden">
+                <div class="text-center space-y-2">
+                    <div class="w-16 h-16 rounded-full bg-budok-100 text-budok-800 border-2 border-budok-500 font-black text-xl flex items-center justify-center mx-auto shadow-md">JV</div>
+                    <div>
+                        <h2 class="text-base font-extrabold text-slate-900">Juan Dela Cruz</h2>
+                        <p class="text-[11px] text-slate-500">@juan_hiker &bull; Verified Outdoor Member</p>
+                    </div>
+                </div>
+                <div class="white-card p-4 rounded-3xl space-y-3">
+                    <h3 class="text-xs font-bold text-slate-900 flex items-center gap-1.5 uppercase tracking-wider"><i class="fa-solid fa-shield-halved text-budok-600"></i> 🔐 Privacy & Location Controls</h3>
+                    <div class="space-y-2.5 text-xs">
+                        <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-200">
+                            <div>
+                                <span class="font-bold text-slate-800 block">Show My Location to Other Hikers</span>
+                                <span class="text-[10px] text-slate-500">Opt-in location sharing</span>
+                            </div>
+                            <input type="checkbox" id="privacy-toggle-location" onchange="handlePrivacyToggleChange(event)" class="w-4 h-4 accent-budok-600">
+                        </div>
+                        <button onclick="toggleAdminModal()" class="w-full py-2 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 font-bold text-xs"><i class="fa-solid fa-user-gear"></i> Open Admin Management Portal</button>
+                    </div>
+                </div>
+
+                <!-- SUBSCRIPTION STATUS CARD -->
+            <div class="white-card p-4 rounded-3xl space-y-3 bg-gradient-to-br from-amber-50 to-white border-amber-200">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-base">
+                            <i class="fa-solid fa-crown"></i>
+                        </div>
+                        <div>
+                            <span class="font-bold text-slate-900 block text-xs">Subscription Plan</span>
+                            <span id="profile-sub-status" class="text-[10px] text-slate-500">Free Tier</span>
+                        </div>
+                    </div>
+                    <button onclick="openSubscriptionModal()" class="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-[10px] shadow-md">
+                        <i class="fa-solid fa-bolt"></i> Go Premium
+                    </button>
+                </div>
+            </div>
+
+                <button onclick="navigateTo('auth')" class="w-full py-3 rounded-2xl bg-slate-200 text-slate-700 font-bold text-xs">Log Out of BundokBuddy</button>
+            </div>
+
+        </main>
+
+        <nav id="app-nav" class="hidden shrink-0 bg-white border-t border-slate-200 px-2 py-2 grid grid-cols-5 gap-1 text-center text-[10px] z-40 shadow-lg">
+            <button onclick="navigateTo('home')" id="nav-home" class="mobile-nav-btn active flex flex-col items-center gap-1 py-1 text-budok-700 font-bold"><i class="fa-solid fa-house text-base"></i><span>Home</span></button>
+            <button onclick="navigateTo('explore')" id="nav-explore" class="mobile-nav-btn flex flex-col items-center gap-1 py-1 text-slate-400 font-medium hover:text-slate-700"><i class="fa-solid fa-compass text-base"></i><span>Explore</span></button>
+            <button onclick="startHikeMode()" id="nav-tracker" class="mobile-nav-btn flex flex-col items-center gap-1 py-1 text-slate-400 font-medium hover:text-slate-700">
+                <div class="w-6 h-6 rounded-full bg-budok-600 text-white flex items-center justify-center -mt-3 shadow-lg shadow-budok-900/30 border-2 border-white"><i class="fa-solid fa-person-hiking text-xs"></i></div>
+                <span class="text-[9px] text-budok-800 font-bold">Active Hike</span>
+            </button>
+            <button onclick="navigateTo('hikers-map')" id="nav-hikers-map" class="mobile-nav-btn flex flex-col items-center gap-1 py-1 text-slate-400 font-medium hover:text-slate-700"><i class="fa-solid fa-users text-base"></i><span>Hikers</span></button>
+            <button onclick="navigateTo('profile')" id="nav-profile" class="mobile-nav-btn flex flex-col items-center gap-1 py-1 text-slate-400 font-medium hover:text-slate-700"><i class="fa-solid fa-user text-base"></i><span>Profile</span></button>
+        </nav>
+
+    </div>
+
+    <!-- MODALS -->
+    <div id="privacy-settings-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center hidden">
+        <div class="bg-white w-full max-w-md rounded-t-3xl border-t border-slate-200 p-5 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                <h3 class="text-sm font-bold text-slate-900 flex items-center gap-1.5"><i class="fa-solid fa-shield-halved text-budok-600"></i> Location Sharing Settings</h3>
+                <button onclick="togglePrivacySettingsModal()" class="text-slate-400 hover:text-slate-700"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <div class="p-3 rounded-2xl bg-budok-50 border border-budok-200 space-y-1">
+                    <span class="font-bold text-budok-900 block">Privacy Guarantee</span>
+                    <p class="text-[10px] text-budok-800 leading-relaxed">Location sharing is <b>OFF by default</b>. Your exact private home address is never revealed.</p>
+                </div>
+                <button onclick="enableLocationSharing()" class="w-full py-3 rounded-2xl bg-budok-600 text-white font-bold text-xs shadow-md">Enable Location Sharing While Hiking</button>
+                <button onclick="stopSharingLocation(); togglePrivacySettingsModal();" class="w-full py-2.5 rounded-2xl bg-slate-100 text-slate-700 font-bold text-xs">Keep Location Private (OFF)</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="emergency-sos-modal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+        <div class="bg-slate-900 border border-red-500/40 text-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 space-y-4 max-h-[90vh] overflow-y-auto relative">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span>
+                    <h3 class="font-extrabold text-white text-sm tracking-wide">Emergency SOS via Satellite</h3>
+                </div>
+                <button onclick="closeEmergencySOSHub()" class="px-2.5 py-1 rounded-xl bg-slate-800 text-slate-400 hover:text-white text-xs font-bold">End / Close</button>
+            </div>
+            <div class="flex rounded-2xl bg-slate-800 p-1 text-xs font-bold">
+                <button onclick="switchSOSTab('panic')" id="sos-tab-panic" class="w-1/3 py-2 rounded-xl bg-red-600 text-white shadow-md">🚨 Panic Alert</button>
+                <button onclick="switchSOSTab('type')" id="sos-tab-type" class="w-1/3 py-2 rounded-xl text-slate-400">❓ Category</button>
+                <button onclick="switchSOSTab('contacts')" id="sos-tab-contacts" class="w-1/3 py-2 rounded-xl text-slate-400">📞 Hotlines</button>
+            </div>
+            <div id="sos-view-panic" class="space-y-4 text-center py-2">
+                <div class="relative w-36 h-36 mx-auto flex items-center justify-center">
+                    <div class="absolute inset-0 rounded-full border-2 border-emerald-500/30 radar-pulse-ring"></div>
+                    <div class="absolute inset-2 rounded-full border border-emerald-500/50"></div>
+                    <div class="w-24 h-24 rounded-full bg-gradient-to-br from-red-600 to-rose-800 flex items-center justify-center text-white shadow-2xl shadow-red-600/50 cursor-pointer active:scale-95 transition-all" onclick="triggerPanicBroadcast()">
+                        <i class="fa-solid fa-hand-pointer text-2xl animate-bounce"></i>
+                    </div>
+                </div>
+                <div>
+                    <span class="text-[10px] font-extrabold text-emerald-400 uppercase tracking-widest block"><i class="fa-solid fa-satellite mr-1"></i> SATELLITE LOCKED</span>
+                    <h4 class="text-base font-black text-white mt-0.5">Keep Pointing at Satellite</h4>
+                    <p class="text-[10px] text-slate-400 max-w-xs mx-auto">Be outdoors with a clear view of the sky. Press and hold panic button or broadcast distress call.</p>
+                </div>
+                <button onclick="triggerPanicBroadcast()" class="w-full py-3.5 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-black text-xs shadow-xl shadow-red-600/30 flex items-center justify-center gap-2"><i class="fa-solid fa-triangle-exclamation"></i> BROADCAST EMERGENCY DISTRESS SIGNAL</button>
+            </div>
+            <div id="sos-view-type" class="space-y-2.5 hidden">
+                <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider">What's the emergency?</h4>
+                <p class="text-[10px] text-slate-400">Answer to route directly to Bukidnon PDRRMO & Rescue Units.</p>
+                <div class="space-y-2 text-xs font-bold">
+                    <button onclick="selectEmergencyType('Lost or Trapped on Mountain')" class="w-full p-3 rounded-2xl bg-slate-800 border border-slate-700 hover:border-red-500 text-left flex items-center justify-between">
+                        <div class="flex items-center gap-2.5"><span class="p-2 rounded-xl bg-red-500/20 text-red-400"><i class="fa-solid fa-compass"></i></span> <span>Lost or Trapped on Trail</span></div>
+                        <i class="fa-solid fa-chevron-right text-slate-500 text-xs"></i>
+                    </button>
+                    <button onclick="selectEmergencyType('Sickness or Trail Injury')" class="w-full p-3 rounded-2xl bg-slate-800 border border-slate-700 hover:border-red-500 text-left flex items-center justify-between">
+                        <div class="flex items-center gap-2.5"><span class="p-2 rounded-xl bg-red-500/20 text-red-400"><i class="fa-solid fa-heart-pulse"></i></span> <span>Sickness / Severe Injury / Fall</span></div>
+                        <i class="fa-solid fa-chevron-right text-slate-500 text-xs"></i>
+                    </button>
+                    <button onclick="selectEmergencyType('Severe Weather / Landslide')" class="w-full p-3 rounded-2xl bg-slate-800 border border-slate-700 hover:border-red-500 text-left flex items-center justify-between">
+                        <div class="flex items-center gap-2.5"><span class="p-2 rounded-xl bg-red-500/20 text-red-400"><i class="fa-solid fa-cloud-showers-water"></i></span> <span>Severe Weather / Flash Flood</span></div>
+                        <i class="fa-solid fa-chevron-right text-slate-500 text-xs"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="sos-view-contacts" class="space-y-3 hidden">
+                <div class="flex items-center justify-between">
+                    <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Emergency Hotlines</h4>
+                    <button onclick="showToast('Contact added to emergency list', 'success')" class="text-[10px] text-emerald-400 font-bold">+ Add New</button>
+                </div>
+                <div class="space-y-2 text-xs">
+                    <div class="p-3 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-between">
+                        <div><span class="font-bold text-white block">Bukidnon PDRRMO Rescue</span><span class="text-[10px] text-slate-400">📞 +63 (088) 813-4111</span></div>
+                        <a href="tel:+630888134111" class="px-3 py-1.5 rounded-xl bg-red-600 text-white font-bold text-[10px]">Call Now</a>
+                    </div>
+                    <div class="p-3 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-between">
+                        <div><span class="font-bold text-white block">DENR-PASu Mountain Rescue</span><span class="text-[10px] text-slate-400">📞 +63 (088) 813-2412</span></div>
+                        <a href="tel:+630888132412" class="px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-bold text-[10px]">Call Now</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="guide-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center hidden">
+        <div class="bg-white w-full max-w-md rounded-t-3xl border-t border-slate-200 p-5 space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                <h3 class="font-bold text-slate-900 text-sm">Book Verified Local Guide</h3>
+                <button onclick="closeGuideModal()" class="text-slate-400 hover:text-slate-700"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form onsubmit="handleGuideBookingSubmit(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-slate-600 font-semibold mb-1">Selected Destination</label>
+                    <input type="text" id="booking-mountain-name" readonly class="w-full bg-slate-100 border border-slate-300 rounded-xl p-2.5 text-budok-800 font-bold">
+                </div>
+                <div>
+                    <label class="block text-slate-600 font-semibold mb-1">Target Climb Date</label>
+                    <input type="date" required class="w-full bg-white border border-slate-300 rounded-xl p-2.5 text-slate-800">
+                </div>
+                <div>
+                    <label class="block text-slate-600 font-semibold mb-1">Number of Climbers</label>
+                    <input type="number" min="1" max="15" value="2" required class="w-full bg-white border border-slate-300 rounded-xl p-2.5 text-slate-800">
+                </div>
+                <button type="submit" class="w-full py-3 rounded-2xl bg-budok-600 text-white font-bold text-xs shadow-md">Submit Guide Reservation Request</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="admin-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white w-full max-w-md rounded-3xl p-5 space-y-4 max-h-[85vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                <h3 class="font-bold text-slate-900 text-sm"><i class="fa-solid fa-user-gear text-amber-600"></i> Admin Portal</h3>
+                <button onclick="toggleAdminModal()" class="text-slate-400 hover:text-slate-700"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <div class="p-3 bg-amber-50 border border-amber-200 rounded-2xl text-[11px] text-amber-800 font-medium">Manage Homestays, Transport, Drivers, Routes & Government Agency listings.</div>
+                <button onclick="showToast('Data verified & updated', 'success'); toggleAdminModal();" class="w-full py-2.5 rounded-xl bg-budok-600 text-white font-bold">Save Admin Updates</button>
+            </div>
+        </div>
+    </div>
+
+    
+    <!-- MODE OF PAYMENT MODAL -->
+<div id="payment-modal" class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-end justify-center hidden">
+    <div class="bg-white w-full max-w-md rounded-t-3xl border-t border-slate-200 p-5 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+            <div>
+                <h3 class="font-bold text-slate-900 text-sm flex items-center gap-1.5"><i class="fa-solid fa-credit-card text-budok-600"></i> Select Mode of Payment</h3>
+                <p id="payment-modal-subtitle" class="text-[10px] text-slate-500 mt-0.5">Choose how you want to pay</p>
+            </div>
+            <button onclick="closePaymentModal()" class="text-slate-400 hover:text-slate-700"><i class="fa-solid fa-xmark text-base"></i></button>
+        </div>
+        <div class="p-3 rounded-2xl bg-budok-50 border border-budok-200 flex items-center justify-between">
+            <div>
+                <span class="text-[10px] text-slate-500 block">Amount Due</span>
+                <span id="payment-modal-amount" class="text-lg font-black text-budok-800">₱0</span>
+            </div>
+            <span id="payment-modal-type" class="text-[9px] px-2 py-1 rounded-full bg-budok-600 text-white font-bold">BOOKING</span>
+        </div>
+        <div class="space-y-2 text-xs">
+            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">E-Wallets</span>
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="confirmPayment('GCash')" class="p-3 rounded-2xl border border-slate-200 bg-white hover:border-budok-500 hover:bg-budok-50 flex items-center gap-2.5 font-bold text-slate-800 transition-all">
+                    <span class="w-8 h-8 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center"><i class="fa-solid fa-mobile-screen-button"></i></span>
+                    <div class="text-left"><span class="block">GCash</span><span class="text-[9px] font-normal text-slate-400">E-Wallet</span></div>
+                </button>
+                <button onclick="confirmPayment('Maya')" class="p-3 rounded-2xl border border-slate-200 bg-white hover:border-budok-500 hover:bg-budok-50 flex items-center gap-2.5 font-bold text-slate-800 transition-all">
+                    <span class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center"><i class="fa-solid fa-wallet"></i></span>
+                    <div class="text-left"><span class="block">Maya</span><span class="text-[9px] font-normal text-slate-400">E-Wallet</span></div>
+                </button>
+                <button onclick="confirmPayment('ShopeePay')" class="p-3 rounded-2xl border border-slate-200 bg-white hover:border-budok-500 hover:bg-budok-50 flex items-center gap-2.5 font-bold text-slate-800 transition-all">
+                    <span class="w-8 h-8 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center"><i class="fa-solid fa-bag-shopping"></i></span>
+                    <div class="text-left"><span class="block">ShopeePay</span><span class="text-[9px] font-normal text-slate-400">E-Wallet</span></div>
+                </button>
+                <button onclick="confirmPayment('GrabPay')" class="p-3 rounded-2xl border border-slate-200 bg-white hover:border-budok-500 hover:bg-budok-50 flex items-center gap-2.5 font-bold text-slate-800 transition-all">
+                    <span class="w-8 h-8 rounded-xl bg-lime-100 text-lime-700 flex items-center justify-center"><i class="fa-solid fa-car"></i></span>
+                    <div class="text-left"><span class="block">GrabPay</span><span class="text-[9px] font-normal text-slate-400">E-Wallet</span></div>
+                </button>
+            </div>
+            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block pt-1">Banks / Cards</span>
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="confirmPayment('Bank Transfer')" class="p-3 rounded-2xl border border-slate-200 bg-white hover:border-budok-500 hover:bg-budok-50 flex items-center gap-2.5 font-bold text-slate-800 transition-all">
+                    <span class="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center"><i class="fa-solid fa-building-columns"></i></span>
+                    <div class="text-left"><span class="block">Bank Transfer</span><span class="text-[9px] font-normal text-slate-400">InstaPay / PESONet</span></div>
+                </button>
+                <button onclick="confirmPayment('Credit/Debit Card')" class="p-3 rounded-2xl border border-slate-200 bg-white hover:border-budok-500 hover:bg-budok-50 flex items-center gap-2.5 font-bold text-slate-800 transition-all">
+                    <span class="w-8 h-8 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center"><i class="fa-solid fa-credit-card"></i></span>
+                    <div class="text-left"><span class="block">Card</span><span class="text-[9px] font-normal text-slate-400">Visa / Mastercard</span></div>
+                </button>
+            </div>
+            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block pt-1">Cash</span>
+            <button onclick="confirmPayment('Cash')" class="w-full p-3 rounded-2xl border border-slate-200 bg-white hover:border-budok-500 hover:bg-budok-50 flex items-center gap-2.5 font-bold text-slate-800 transition-all">
+                <span class="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center"><i class="fa-solid fa-money-bill-wave"></i></span>
+                <div class="text-left"><span class="block">Cash</span><span class="text-[9px] font-normal text-slate-400">Pay on pickup / check-in / climb day</span></div>
+            </button>
+        </div>
+        <p class="text-[9px] text-center text-slate-400">Secure payment via BundokBuddy Pay. A confirmation will be sent to your email.</p>
+    </div>
+</div>
+
+<!-- WEATHER DETAILS MODAL -->
+<div id="weather-modal" class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-end justify-center hidden">
+    <div class="bg-white w-full max-w-md rounded-t-3xl border-t border-slate-200 p-5 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+            <div>
+                <h3 class="font-bold text-slate-900 text-sm flex items-center gap-1.5"><i class="fa-solid fa-cloud-sun text-amber-500"></i> Bukidnon Weather Forecast</h3>
+                <p class="text-[10px] text-slate-500 mt-0.5">Live mountain conditions across Bukidnon spots</p>
+            </div>
+            <button onclick="closeWeatherModal()" class="text-slate-400 hover:text-slate-700"><i class="fa-solid fa-xmark text-base"></i></button>
+        </div>
+
+        <div class="p-3 rounded-2xl bg-gradient-to-br from-budok-700 to-budok-900 text-white flex items-center justify-between">
+            <div>
+                <span class="text-[10px] text-budok-200 block">Overall Climb Conditions</span>
+                <span class="text-lg font-black">FAVORABLE ✔</span>
+                <span class="text-[9px] text-budok-200 block mt-0.5">All major trails open today</span>
+            </div>
+            <i class="fa-solid fa-mountain-sun text-4xl text-budok-300"></i>
+        </div>
+
+        <div class="space-y-2 text-xs" id="weather-list"></div>
+
+        <p class="text-[9px] text-center text-slate-400">Data from PAGASA & local tourism weather stations. Updated every 3 hours.</p>
+    </div>
+</div>
+
+
+    <!-- SUBSCRIPTION MODAL -->
+<div id="subscription-modal" class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-end justify-center hidden">
+    <div class="bg-white w-full max-w-md rounded-t-3xl border-t border-slate-200 p-5 space-y-4 max-h-[92vh] overflow-y-auto">
+        <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+            <div>
+                <h3 class="font-bold text-slate-900 text-sm flex items-center gap-1.5"><i class="fa-solid fa-crown text-amber-500"></i> BundokBuddy Premium</h3>
+                <p class="text-[10px] text-slate-500 mt-0.5">Unlock unlimited hikes, offline maps & priority rescue</p>
+            </div>
+            <button onclick="closeSubscriptionModal()" class="text-slate-400 hover:text-slate-700"><i class="fa-solid fa-xmark text-base"></i></button>
+        </div>
+        <div class="flex rounded-2xl bg-slate-200 p-1 text-xs font-bold">
+            <button onclick="setBillingCycle('monthly')" id="sub-tab-monthly" class="w-1/2 py-2 rounded-xl bg-white text-slate-900 shadow-sm">Monthly</button>
+            <button onclick="setBillingCycle('yearly')" id="sub-tab-yearly" class="w-1/2 py-2 rounded-xl text-slate-500">Yearly <span class="text-[9px] text-budok-700 font-extrabold">SAVE 20%</span></button>
+        </div>
+        <div class="space-y-2.5 text-xs" id="subscription-plans"></div>
+        <div class="p-3 rounded-2xl bg-budok-50 border border-budok-200 text-[10px] text-budok-800 leading-relaxed">
+            <b>Why go Premium?</b> Priority SOS dispatch, unlimited offline maps, advanced GPS analytics, and exclusive partner discounts on homestays & transport.
+        </div>
+        <p class="text-[9px] text-center text-slate-400">Cancel anytime. Prices in PHP. Payment processed via BundokBuddy Pay.</p>
+    </div>
+</div>
+
+    <div id="toast-container" class="fixed bottom-16 inset-x-4 z-50 space-y-2 pointer-events-none flex flex-col items-center"></div>
+
+    <script>
+        /* ===================================================================
+           BUNDOKBUDDY - EXPANDED BUKIDNON TRAIL DATABASE (18+ TRAILS)
+           All map tiles now use OpenTopoMap / Esri — NO MORE OSM 403 ERRORS
+        =================================================================== */
+
+        const INITIAL_MOUNTAINS = [
+            // --- MALAYBALAY CITY ---
+            {
+                mountain_id: "mt-capistrano", name: "Mt. Capistrano", province: "Bukidnon",
+                municipality: "Malaybalay City", barangay: "Brgy. Managok",
+                latitude: 8.0645, longitude: 125.1872, elevation: 793,
+                difficulty: "INTERMEDIATE", distance: 4.5, estimated_duration: "2-4 Hours", type: "Peak",
+                image: "https://images.unsplash.com/photo-1544644181-1484b3fdfc62?auto=format&fit=crop&w=800&q=80",
+                mountain_description: "Iconic limestone karst peak in Brgy. Managok, Malaybalay City known for rock climbing and panoramic 360-degree views of Bukidnon rice plains.",
+                trail_description: "Steep forest trail transitioning into technical karst limestone rock climbing with summit handlines.",
+                current_status: "OPEN", status_message: "OPEN: Mandatory registration at Brgy. Managok Tourism Desk.",
+                average_rating: 4.8, review_count: 210, featured: true,
+                route_landmarks: [
+                    { point: "Trailhead Base", desc: "Registration Desk & Equipment Check" },
+                    { point: "Forest Section", desc: "Shaded bamboo & hardwood ascent" },
+                    { point: "Karst Rockface", desc: "Technical rope climbing section" },
+                    { point: "Summit Viewpoint", desc: "360-degree Malaybalay Valley overlook" }
+                ],
+                homestays: [{ id: "hs-managok", name: "Managok Karst Vista Homestay", price: "₱450/night", image: "https://images.unsplash.com/photo-1587061949409-02df41d5e562?auto=format&fit=crop&w=400&q=80", gallery: ["https://images.unsplash.com/photo-1587061949409-02df41d5e562?auto=format&fit=crop&w=400&q=80", "https://images.unsplash.com/photo-1540518614846-7eded433c457?auto=format&fit=crop&w=400&q=80"], dist: "0.5 km to trailhead", lat: 8.0650, lng: 125.1860, desc: "Cozy eco-homestay situated at the base of Mt. Capistrano." }],
+                transports: [{ id: "tr-managok", name: "Managok Express Tricycle", driverName: "Datu Mario", driverRating: "4.9", trips: "186", vehicleImg: "https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&w=400&q=80", vehicleDesc: "Heavy-Duty Mountain Tricycle", fare: "₱60", route: "Malaybalay Market -> Managok Base" }]
+            },
+            {
+                mountain_id: "two-trees-trail", name: "Two Trees Trail", province: "Bukidnon",
+                municipality: "Malaybalay City", barangay: "Brgy. 1 / Can-ayan",
+                latitude: 8.1560, longitude: 125.1320, elevation: 620,
+                difficulty: "BEGINNER", distance: 3.5, estimated_duration: "1-2 Hours", type: "Nature Trail",
+                image: "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=800&q=80",
+                mountain_description: "Accessible pine-tree lined fitness and sunrise loop trail overlooking Malaybalay City Proper.",
+                trail_description: "Shaded pine needle paths, well-maintained dirt slopes, gentle elevation climb.",
+                current_status: "OPEN", status_message: "OPEN: Free entry public nature and fitness trail.",
+                average_rating: 4.7, review_count: 340, featured: true
+            },
+            {
+                mountain_id: "cedar-falls", name: "CEDAR Falls (Natigbasan & Gantungan)", province: "Bukidnon",
+                municipality: "Malaybalay City", barangay: "Brgy. Impalutao",
+                latitude: 8.1712, longitude: 125.1050, elevation: 450,
+                difficulty: "BEGINNER", distance: 5.0, estimated_duration: "3-4 Hours", type: "Waterfall Trail",
+                image: "https://images.unsplash.com/photo-1432405972618-c60b0225b8f9?auto=format&fit=crop&w=800&q=80",
+                mountain_description: "Three-tier waterfall system: Natigbasan, Gantungan & Dila Falls. Popular for swimming and picnics.",
+                trail_description: "Gentle forest trail with river crossings and natural pools.",
+                current_status: "OPEN", status_message: "OPEN: Register at CEDAR Office.",
+                average_rating: 4.6, review_count: 180, featured: false
+            },
+            {
+                mountain_id: "nasuli-cold-spring", name: "Nasuli Cold Spring", province: "Bukidnon",
+                municipality: "Malaybalay City", barangay: "Brgy. Dalwangan",
+                latitude: 8.1230, longitude: 125.0880, elevation: 380,
+                difficulty: "BEGINNER", distance: 2.0, estimated_duration: "1-2 Hours", type: "Nature Trail",
+                image: "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=800&q=80",
+                mountain_description: "Natural cold spring with turquoise water, picnic huts, and shaded spots.",
+                trail_description: "Easy nature walk, great for family trips.",
+                current_status: "OPEN", status_message: "OPEN: Day-use only.",
+                average_rating: 4.5, review_count: 95, featured: false
+            },
+
+            // --- LANTAPAN ---
+            {
+                mountain_id: "mt-dulang-dulang", name: "Mt. Dulang-Dulang (D2)", province: "Bukidnon",
+                municipality: "Lantapan", barangay: "Brgy. Dulangan",
+                latitude: 8.1133, longitude: 124.9225, elevation: 2938,
+                difficulty: "MAJOR CLIMB", distance: 22.0, estimated_duration: "3-4 Days", type: "Mountain",
+                image: "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=800&q=80",
+                mountain_description: "2nd highest peak in the Philippines (2,938 MASL). Renowned for its mystical, dense mossy forest and sacred tribal sanctuary.",
+                trail_description: "Thick moss carpeted trails, ancient twisted trees, high elevation cold.",
+                current_status: "RESTRICTED", status_message: "OPEN WITH RESTRICTIONS: Mandatory PAMB permits and Talaandig ritual required.",
+                average_rating: 5.0, review_count: 142, featured: true
+            },
+            {
+                mountain_id: "mt-kitanglad", name: "Mt. Kitanglad", province: "Bukidnon",
+                municipality: "Lantapan", barangay: "Brgy. Sungco",
+                latitude: 8.1402, longitude: 124.9189, elevation: 2899,
+                difficulty: "MAJOR CLIMB", distance: 18.5, estimated_duration: "2-3 Days", type: "Mountain",
+                image: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80",
+                mountain_description: "4th highest peak in the Philippines. Revered as sacred ancestral domain of the Talaandig indigenous people.",
+                trail_description: "Steep pine forest, root ladders, and mossy mountain trails.",
+                current_status: "RESTRICTED", status_message: "OPEN WITH RESTRICTIONS: Mandatory PAMB permit & traditional Panagdaan ritual required.",
+                average_rating: 4.9, review_count: 128, featured: true
+            },
+            {
+                mountain_id: "binahon-farm", name: "Binahon Agroforestry Farm", province: "Bukidnon",
+                municipality: "Lantapan", barangay: "Brgy. Songco",
+                latitude: 8.1320, longitude: 124.9450, elevation: 1100,
+                difficulty: "BEGINNER", distance: 2.5, estimated_duration: "2-3 Hours", type: "Nature Trail",
+                image: "https://images.unsplash.com/photo-1464226184884-fa280b87c399?auto=format&fit=crop&w=800&q=80",
+                mountain_description: "Organic farm tour destination on the slopes of Mt. Kitanglad. Learn agroforestry, composting, and sustainable farming.",
+                trail_description: "Easy farm trails, garden tours, and learning sessions.",
+                current_status: "OPEN", status_message: "OPEN: Booking required for guided farm tours.",
+                average_rating: 4.6, review_count: 78, featured: false
+            },
+
+            // --- IMPASUG-ONG ---
+            {
+                mountain_id: "panimahawa-ridge", name: "Panimahawa Ridge", province: "Bukidnon",
+                municipality: "Impasug-ong", barangay: "Brgy. Impalutao",
+                latitude: 8.3012, longitude: 124.9811, elevation: 820,
+                difficulty: "BEGINNER", distance: 6.2, estimated_duration: "3-5 Hours", type: "Ridge",
+                image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80",
+                mountain_description: "Popular sunrise ridge trail overlooking the Tagoloan River valley and rolling green hills.",
+                trail_description: "Open grassland trail, rolling ridge paths, stunning sunrise views.",
+                current_status: "OPEN", status_message: "OPEN: Registration at Antogon Tourism Center.",
+                average_rating: 4.7, review_count: 210, featured: true
+            },
+            {
+                mountain_id: "mt-kulago", name: "Mt. Kulago", province: "Bukidnon",
+                municipality: "Impasug-ong", barangay: "Brgy. Impalutao",
+                latitude: 8.2891, longitude: 124.9650, elevation: 860,
+                difficulty: "INTERMEDIATE", distance: 9.5, estimated_duration: "1 Day", type: "Peak",
+                image: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=800&q=80",
+                mountain_description: "Famous for its wooden horse monument peak and views of Tagoloan river canyon.",
+                trail_description: "Open cogon grassland and river crossing.",
+                current_status: "OPEN", status_message: "OPEN: Register at Tourism Desk.",
+                average_rating: 4.8, review_count: 142, featured: true
+            },
+            {
+                mountain_id: "kapayawan-ridge", name: "Kapayawan Ridge Campsite", province: "Bukidnon",
+                municipality: "Impasug-ong", barangay: "Brgy. Kibalabag",
+                latitude: 8.2780, longitude: 124.9920, elevation: 1250,
+                difficulty: "MODERATE", distance: 8.2, estimated_duration: "Overnight", type: "Ridge",
+                image: "https://images.unsplash.com/photo-1483728642387-6c3bdd6c93e5?auto=format&fit=crop&w=800&q=80",
+                mountain_description: "Ridge campsite above the clouds with panoramic views of Bukidnon's mountain ranges.",
+                trail_description: "Grassland ascent with campsite at summit ridge.",
+                current_status: "OPEN", status_message: "OPEN: Camping permit required from Barangay.",
+                average_rating: 4.7, review_count: 88, featured: false
+            },
+            {
+                mountain_id: "engkalumad-ridge", name: "Engkalumad Ridge", province: "Bukidnon",
+                municipality: "Impasug-ong", barangay: "Brgy. Impalutao",
+                latitude: 8.2950, longitude: 124.9750, elevation: 780,
+                difficulty: "EASY", distance: 3.5, estimated_duration: "1-2 Hours", type: "Ridge",
+                image: "https://images.unsplash.com/photo-1465056836041-7f43ac27dcb5?auto=format&fit=crop&w=800&q=80",
+                mountain_description: "Family-friendly ridge walk with views of the Impasugong valley.",
+                trail_description: "Gentle slope, suitable for beginners and kids.",
+                current_status: "OPEN", status_message: "OPEN: Day hike only.",
+                average_rating: 4.5, review_count: 62, featured: false
+            },
+            {
+                mountain_id: "mt-kibuwa", name: "Mt. Kibuwa", province: "Bukidnon",
+                municipality: "Impasug-ong", barangay: "Brgy. Impalutao",
+                latitude: 8.2750, longitude: 124.9550, elevation: 1020,
+                difficulty: "MODERATE", distance: 10.0, estimated_duration: "1 Day", type: "Mountain",
+                image: "https://images.unsplash.com/photo-1454496522488-7a8e488e8606?auto=format&fit=crop&w=800&q=80",
+                mountain_description: "Forested mountain with mossy summit and panoramic views of nearby ridges.",
+                trail_description: "Forested ascent, steep sections near summit.",
+                current_status: "OPEN", status_message: "OPEN: Guide required.",
+                average_rating: 4.6, review_count: 45, featured: false
+            },
+            {
+                mountain_id: "rotaypeaks", name: "RotyPeaks Ridge Camp", province: "Bukidnon",
+                municipality: "Impasug-ong", barangay: "Brgy. Impalutao",
+                latitude: 8.3000, longitude: 124.9900, elevation: 900,
+                difficulty: "EASY", distance: 4.0, estimated_duration: "Overnight", type: "Ridge",
+                image: "https://images.unsplash.com/photo-1533873984035-25970ab07461?auto=format&fit=crop&w=800&q=80",
+                mountain_description: "Glamping and ridge camping site above the clouds. Ideal for weekend getaways.",
+                trail_description: "Short hike to campsite with sea of clouds view.",
+                current_status: "OPEN", status_message: "OPEN: Reservation required.",
+                average_rating: 4.8, review_count: 120, featured: true
+            },
+            {
+                mountain_id: "gantungan-falls", name: "Gantungan Falls", province: "Bukidnon",
+                municipality: "Impasug-ong", barangay: "Brgy. Impalutao",
+                latitude: 8.2950, longitude: 124.9600, elevation: 650,
+                difficulty: "MODERATE", distance: 3.1, estimated_duration: "2-3 Hours", type: "Waterfall Trail",
+                image: "https://images.unsplash.com/photo-1467890947394-8171244e5410?auto=format&fit=crop&w=800&q=80",
+                mountain_description: "Picturesque waterfall in the heart of Impasugong's forest. A favorite cooling-off spot.",
+                trail_description: "Forest trail with river crossings and rocky sections.",
+                current_status: "OPEN", status_message: "OPEN: Register at Barangay.",
+                average_rating: 4.6, review_count: 78, featured: false
+            },
+            {
+                mountain_id: "natigbasan-falls", name: "Natigbasan Falls", province: "Bukidnon",
+                municipality: "Impasug-ong", barangay: "Brgy. Impalutao",
+                latitude: 8.2980, longitude: 124.9640, elevation: 700,
+                difficulty: "MODERATE", distance: 4.0, estimated_duration: "2-3 Hours", type: "Waterfall Trail",
+                image: "https://images.unsplash.com/photo-1508739773434-c26b3d09e071?auto=format&fit=crop&w=800&q=80",
+                mountain_description: "One of the three CEDAR falls, with a wide catch basin ideal for swimming.",
+                trail_description: "Forest trek with steep descent to the falls.",
+                current_status: "OPEN", status_message: "OPEN: Guide recommended.",
+                average_rating: 4.5, review_count: 55, featured: false
+            },
+
+            // --- MANOLO FORTICH ---
+            {
+                mountain_id: "dahilayan", name: "Dahilayan Adventure Park", province: "Bukidnon",
+                municipality: "Manolo Fortich", barangay: "Brgy. Dahilayan",
+                latitude: 8.2500, longitude: 124.8800, elevation: 1200,
+                difficulty: "BEGINNER", distance: 3.0, estimated_duration: "Half Day", type: "Nature Trail",
+                image: "https://images.unsplash.com/photo-1508739773434-c26b3d09e071?auto=format&fit=crop&w=800&q=80",
+                mountain_description: "Home to Asia's longest dual zipline and various adventure rides including luge, wall climbing, and horseback riding.",
+                trail_description: "Resort-style paths and adventure circuits.",
+                current_status: "OPEN", status_message: "OPEN: Entrance fee applies.",
+                average_rating: 4.8, review_count: 450, featured: true
+            },
+            {
+                mountain_id: "del-monte", name: "Del Monte Pineapple Plantation", province: "Bukidnon",
+                municipality: "Manolo Fortich", barangay: "Camp Phillips",
+                latitude: 8.2600, longitude: 124.8900, elevation: 700,
+                difficulty: "BEGINNER", distance: 5.0, estimated_duration: "2-3 Hours", type: "Nature Trail",
+                image: "https://images.unsplash.com/photo-1553279768-865429fa0078?auto=format&fit=crop&w=800&q=80",
+                mountain_description: "One of the world's largest pineapple plantations. Scenic rolling hills of pineapples stretching to the horizon.",
+                trail_description: "Scenic drive-through and plantation walk.",
+                current_status: "OPEN", status_message: "OPEN: Guided tours only.",
+                average_rating: 4.7, review_count: 320, featured: true
+            },
+
+            // --- VALENCIA CITY ---
+            {
+                mountain_id: "lake-apo", name: "Lake Apo", province: "Bukidnon",
+                municipality: "Valencia City", barangay: "Brgy. Guinoyoran",
+                latitude: 7.9000, longitude: 125.0500, elevation: 650,
+                difficulty: "BEGINNER", distance: 2.0, estimated_duration: "2-3 Hours", type: "Nature Trail",
+                image: "https://images.unsplash.com/photo-1439066615861-d1af74d74000?auto=format&fit=crop&w=800&q=80",
+                mountain_description: "Crater lake with floating cottages and emerald-green water. A serene escape just outside Valencia City.",
+                trail_description: "Lakeside walk, boat rides, and floating cottage stays.",
+                current_status: "OPEN", status_message: "OPEN: Cottage rentals available.",
+                average_rating: 4.6, review_count: 195, featured: true
+            },
+            {
+                mountain_id: "musuan-peak", name: "Musuan Peak (Mt. Calayo)", province: "Bukidnon",
+                municipality: "Maramag", barangay: "Brgy. Musuan",
+                latitude: 7.8500, longitude: 125.0000, elevation: 646,
+                difficulty: "BEGINNER", distance: 3.0, estimated_duration: "1-2 Hours", type: "Peak",
+                image: "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=800&q=80",
+                mountain_description: "Dormant volcano and protected forest with panoramic views of the Bukidnon plateau.",
+                trail_description: "Short but steep trail to a grassy summit.",
+                current_status: "OPEN", status_message: "OPEN: Free entry, guides on site.",
+                average_rating: 4.5, review_count: 180, featured: false
+            },
+
+            // --- PANGANTUCAN ---
+            {
+                mountain_id: "napalit-lake", name: "Napalit Lake", province: "Bukidnon",
+                municipality: "Pangantucan", barangay: "Brgy. Bacusanon",
+                latitude: 7.7800, longitude: 124.8700, elevation: 1450,
+                difficulty: "MODERATE", distance: 6.0, estimated_duration: "Half Day", type: "Nature Trail",
+                image: "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=800&q=80",
+                mountain_description: "Tranquil crater lake with floating islets surrounded by rainforest.",
+                trail_description: "Rainforest trek to crater lake.",
+                current_status: "OPEN", status_message: "OPEN: Guide required.",
+                average_rating: 4.7, review_count: 65, featured: false
+            },
+
+            // --- TALAKAG ---
+            {
+                mountain_id: "mindamora-falls", name: "Mindamora Falls", province: "Bukidnon",
+                municipality: "Talakag", barangay: "Brgy. San Isidro",
+                latitude: 8.1400, longitude: 124.7000, elevation: 550,
+                difficulty: "MODERATE", distance: 5.5, estimated_duration: "Half Day", type: "Waterfall Trail",
+                image: "https://images.unsplash.com/photo-1467890947394-8171244e5410?auto=format&fit=crop&w=800&q=80",
+                mountain_description: "The Philippines' 2nd highest waterfall at 270 meters, plunging into a jungle pool.",
+                trail_description: "Jungle trail with steep descent to the falls.",
+                current_status: "OPEN", status_message: "OPEN: Local guide required.",
+                average_rating: 4.9, review_count: 88, featured: true
+            }
+        ];
+
+        const VERIFIED_GOVERNMENT_OFFICES = [
+            {
+                name: "Malaybalay City Tourism Office",
+                address: "City Hall Annex, Sayre Highway, Malaybalay City, Bukidnon",
+                contact: "+63 (088) 221-2300 / +63 917 884 1020",
+                hours: "Mon - Fri: 8:00 AM - 5:00 PM",
+                lat: 8.1550, lng: 125.1290,
+                image: "https://images.unsplash.com/photo-1554469384-e58fac16e23a?auto=format&fit=crop&w=400&q=80"
+            },
+            {
+                name: "DENR-PASu Kitanglad Protected Area Office",
+                address: "Malaybalay City, Bukidnon",
+                contact: "+63 (088) 813-2412",
+                hours: "Mon - Fri: 8:00 AM - 5:00 PM",
+                lat: 8.1574, lng: 125.1278,
+                image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=400&q=80"
+            }
+        ];
+
+        const GUIDE_GUILDS = {
+            "malaybalay": {
+                id: "gg-malaybalay",
+                name: "Malaybalay City Local Trekkers Guild",
+                municipality: "Malaybalay City",
+                image: "https://images.unsplash.com/photo-1551632811-561732d1e306?auto=format&fit=crop&w=800&q=80",
+                rating: 4.9,
+                years_active: 12,
+                total_summits: 3480,
+                group_size: "1-15 pax",
+                desc: "The Malaybalay City Local Trekkers Guild is the officially accredited guide association of the City Tourism Office. All members undergo mandatory mountain safety, first aid, and cultural heritage training. They specialize in Bukidnon's karst peaks and ancestral domain trails.",
+                specialties: ["Mt. Capistrano", "Two Trees Trail", "Karst Rock Climbing", "Sunrise Treks", "Cultural Heritage"],
+                members: [
+                    { name: "Kuya Rodel Bacus", role: "Head Guide", years: 14, certs: "Wilderness First Responder" },
+                    { name: "Ate Lorna Magsaysay", role: "Senior Guide", years: 10, certs: "LNT Master Educator" },
+                    { name: "Kuya Jomar Talaandig", role: "Cultural Guide", years: 8, certs: "Ancestral Domain Specialist" },
+                    { name: "Ate Michelle Reyes", role: "Trail Guide", years: 5, certs: "Basic Mountaineering Course" }
+                ],
+                packages: [
+                    { label: "Day Hike (1-5 pax)", price: "₱800 / group", desc: "8-hour guided trek, permits assistance" },
+                    { label: "Day Hike (6-10 pax)", price: "₱1,400 / group", desc: "8-hour guided trek, permits assistance" },
+                    { label: "Overnight Camp Guide", price: "₱1,200 / night", desc: "Includes camp setup & safety watch" },
+                    { label: "Photography Trek", price: "₱1,500 / group", desc: "Sunrise/sunset guided photo spots" }
+                ],
+                office: "City Tourism Office, City Hall Annex, Sayre Highway, Malaybalay City",
+                contact: "+63 917 884 1020 / +63 (088) 221-2300",
+                email: "malaybalaytrekkers@bundokbuddy.ph",
+                hours: "Mon - Sun: 5:00 AM - 8:00 PM (Climb days)",
+                standard_fee: "₱800 / group"
+            }
+        };
+
+        // ============================================================
+        // MAP LAYERS — All providers are prototype-safe (no OSM blocks)
+        // Standard → OpenTopoMap (reliable, no rate-limit issues)
+        // Satellite → Esri World Imagery (already safe)
+        // Terrain → OpenTopoMap (contour lines for hiking)
+        // 3D → Esri World Hillshade (shaded relief)
+        // ============================================================
+        const MAP_LAYERS = {
+            standard: { url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', attribution: '© OpenTopoMap contributors', maxZoom: 17 },
+            satellite: { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', attribution: '© Esri, Maxar, Earthstar Geographics', maxZoom: 19 },
+            terrain: { url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', attribution: '© OpenTopoMap contributors', maxZoom: 17 },
+            '3d': { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}', attribution: '© Esri World Hillshade', maxZoom: 16 }
+        };
+
+        const TRANSPORT_MODES = {
+            'habal-habal': {
+                icon: 'fa-motorcycle',
+                label: 'Habal-Habal Shuttle',
+                driverName: 'Datu Mario',
+                driverRating: '4.9',
+                trips: '186',
+                vehicleImg: 'https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&w=400&q=80',
+                vehicleDesc: 'Heavy-Duty Mountain Motorcycle — 1-2 pax, best for steep single-track access.',
+                economyLabel: 'Economy / Shared',
+                economyPrice: '₱60 / person',
+                economyDesc: 'Regular route dropoff',
+                privateLabel: 'Private Charter',
+                privatePrice: '₱250 direct',
+                privateDesc: 'Express direct to trailhead'
+            },
+            'van': {
+                icon: 'fa-van-shuttle',
+                label: 'Aircon Van',
+                driverName: 'Kuya Ronel',
+                driverRating: '4.8',
+                trips: '220',
+                vehicleImg: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=400&q=80',
+                vehicleDesc: 'Toyota HiAce Aircon Van — 10-14 pax, comfortable for groups.',
+                economyLabel: 'Economy / Shared',
+                economyPrice: '₱120 / person',
+                economyDesc: 'Shared van, fixed schedule',
+                privateLabel: 'Private Charter',
+                privatePrice: '₱1,800 direct',
+                privateDesc: 'Whole van reserved for your group'
+            },
+            'multicab': {
+                icon: 'fa-bus',
+                label: 'Multicab Jeep',
+                driverName: 'Ate Nene',
+                driverRating: '4.7',
+                trips: '98',
+                vehicleImg: 'https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&w=400&q=80',
+                vehicleDesc: 'Open-air Multicab — 8-10 pax, great for budget group trips.',
+                economyLabel: 'Economy / Shared',
+                economyPrice: '₱80 / person',
+                economyDesc: 'Open-air shared ride',
+                privateLabel: 'Private Charter',
+                privatePrice: '₱1,200 direct',
+                privateDesc: 'Whole multicab for your group'
+            },
+            'tricycle': {
+                icon: 'fa-car-side',
+                label: 'Tricycle',
+                driverName: 'Mang Ben',
+                driverRating: '4.6',
+                trips: '310',
+                vehicleImg: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=400&q=80',
+                vehicleDesc: 'Standard Tricycle — 3-4 pax, ideal for short barangay hops.',
+                economyLabel: 'Economy / Shared',
+                economyPrice: '₱30 / person',
+                economyDesc: 'Per-head local fare',
+                privateLabel: 'Private Charter',
+                privatePrice: '₱150 direct',
+                privateDesc: 'Whole tricycle reserved'
+            }
+        };
+
+        let mountains = [...INITIAL_MOUNTAINS];
+        let currentSelectedMountain = null;
+        let currentSelectedHomestay = null;
+        let currentSelectedTransport = null;
+        let isLocationSharingOn = false;
+        let mainMapInstance = null;
+        let trackerMapInstance = null;
+        let homestayMapInstance = null;
+        let transportMapInstance = null;
+        let hikeTimerInterval = null;
+        let hikeSeconds = 872;
+        let savedMountainIds = JSON.parse(localStorage.getItem('budok_saved') || '[]');
+        let currentTileLayer = null;
+        let currentPerspective = 'standard';
+
+        // ============================================================
+            // SUBSCRIPTION
+            // ============================================================
+            const SUBSCRIPTION_PLANS = {
+                free: {
+                    id: "free", name: "Free Explorer", monthly: "₱0", yearly: "₱0",
+                    color: "bg-slate-100 text-slate-700 border-slate-300",
+                    badgeColor: "bg-slate-500",
+                    perks: ["Basic trail access", "Community hikers map", "Standard SOS dispatch"],
+                    popular: false
+                },
+                pro: {
+                    id: "pro", name: "Pro Hiker", monthly: "₱149", yearly: "₱1,430",
+                    color: "bg-budok-50 text-budok-900 border-budok-400",
+                    badgeColor: "bg-budok-600",
+                    perks: ["Unlimited hikes & guides", "Offline Bukidnon maps", "Priority SOS dispatch", "Ad-free experience"],
+                    popular: true
+                },
+                elite: {
+                    id: "elite", name: "Elite Trailblazer", monthly: "₱349", yearly: "₱3,350",
+                    color: "bg-amber-50 text-amber-900 border-amber-400",
+                    badgeColor: "bg-amber-600",
+                    perks: ["Everything in Pro", "1-on-1 certified guide", "15% homestay discounts", "Live GPS tracking share", "24/7 concierge rescue"],
+                    popular: false
+                }
+            };
+
+            let currentBillingCycle = 'monthly';
+            let currentUserPlan = localStorage.getItem('budok_plan') || 'free';
+
+            function openSubscriptionModal() {
+                setBillingCycle(currentBillingCycle);
+                renderSubscriptionPlans();
+                document.getElementById('subscription-modal').classList.remove('hidden');
+            }
+
+            function closeSubscriptionModal() {
+                document.getElementById('subscription-modal').classList.add('hidden');
+            }
+
+            function setBillingCycle(cycle) {
+                currentBillingCycle = cycle;
+                const mBtn = document.getElementById('sub-tab-monthly');
+                const yBtn = document.getElementById('sub-tab-yearly');
+                if (cycle === 'monthly') {
+                    mBtn.className = "w-1/2 py-2 rounded-xl bg-white text-slate-900 shadow-sm";
+                    yBtn.className = "w-1/2 py-2 rounded-xl text-slate-500";
+                } else {
+                    yBtn.className = "w-1/2 py-2 rounded-xl bg-white text-slate-900 shadow-sm";
+                    mBtn.className = "w-1/2 py-2 rounded-xl text-slate-500";
+                }
+                renderSubscriptionPlans();
+            }
+
+            function renderSubscriptionPlans() {
+                const container = document.getElementById('subscription-plans');
+                if (!container) return;
+                container.innerHTML = Object.values(SUBSCRIPTION_PLANS).map(plan => {
+                    const isCurrent = currentUserPlan === plan.id;
+                    const priceLabel = currentBillingCycle === 'monthly' ? plan.monthly : plan.yearly;
+                    const suffix = plan.id === 'free' ? '' : (currentBillingCycle === 'monthly' ? '/month' : '/year');
+                    return `
+                        <div class="relative p-3.5 rounded-2xl border-2 ${plan.color} ${plan.popular ? 'ring-2 ring-budok-500' : ''}">
+                            ${plan.popular ? '<span class="absolute -top-2 right-3 px-2 py-0.5 rounded-full bg-budok-600 text-white text-[8px] font-extrabold">MOST POPULAR</span>' : ''}
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <b class="text-sm text-slate-900 block">${plan.name}</b>
+                                    <div class="mt-1">
+                                        <span class="text-lg font-black text-slate-900">${priceLabel}</span>
+                                        <span class="text-[10px] text-slate-500">${suffix}</span>
+                                    </div>
+                                </div>
+                                ${isCurrent
+                                    ? '<span class="px-2 py-1 rounded-lg bg-slate-700 text-white font-bold text-[9px]">ACTIVE</span>'
+                                    : `<button onclick="selectSubscriptionPlan('${plan.id}')" class="px-3 py-1.5 rounded-xl ${plan.badgeColor} text-white font-bold text-[10px] shadow-md">${plan.id === 'free' ? 'Downgrade' : 'Choose'}</button>`
+                                }
+                            </div>
+                            <ul class="mt-2 space-y-1 text-[10px] text-slate-600">
+                                ${plan.perks.map(p => `<li class="flex items-center gap-1.5"><i class="fa-solid fa-check text-budok-600 text-[8px]"></i> ${p}</li>`).join('')}
+                            </ul>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            function selectSubscriptionPlan(planId) {
+                const plan = SUBSCRIPTION_PLANS[planId];
+                if (!plan) return;
+                if (planId === 'free') {
+                    currentUserPlan = 'free';
+                    localStorage.setItem('budok_plan', 'free');
+                    updateSubscriptionUI();
+                    showToast('Switched to Free Explorer plan.', 'info');
+                    closeSubscriptionModal();
+                    return;
+                }
+                const amount = currentBillingCycle === 'monthly' ? plan.monthly : plan.yearly;
+                const label = `${plan.name} (${currentBillingCycle})`;
+                closeSubscriptionModal();
+                openPaymentModal('SUBSCRIPTION', label, amount);
+                const originalConfirm = window.confirmPayment;
+                window.confirmPayment = function(method) {
+                    currentUserPlan = planId;
+                    localStorage.setItem('budok_plan', planId);
+                    updateSubscriptionUI();
+                    originalConfirm(method);
+                    window.confirmPayment = originalConfirm;
+                };
+            }
+
+            function updateSubscriptionUI() {
+                const plan = SUBSCRIPTION_PLANS[currentUserPlan] || SUBSCRIPTION_PLANS.free;
+                const el = document.getElementById('profile-sub-status');
+                if (el) el.innerText = plan.name + (plan.id !== 'free' ? ' ✓ Active' : '');
+            }
+
+        let selectedTransportMode = 'habal-habal';
+
+
+
+        // ===== MODE OF PAYMENT STATE =====
+        let pendingPayment = null;
+
+        function openPaymentModal(type, label, amount) {
+            pendingPayment = { type, label, amount };
+            document.getElementById('payment-modal-subtitle').innerText = label;
+            document.getElementById('payment-modal-amount').innerText = amount;
+            document.getElementById('payment-modal-type').innerText = type;
+            document.getElementById('payment-modal').classList.remove('hidden');
+        }
+
+        function closePaymentModal() {
+            document.getElementById('payment-modal').classList.add('hidden');
+            pendingPayment = null;
+        }
+
+        function confirmPayment(method) {
+            if (!pendingPayment) return;
+            const type = pendingPayment.type;
+            const label = pendingPayment.label;
+            closePaymentModal();
+            showToast(`${type} booked via ${method}!`, 'success');
+            setTimeout(() => showToast(`Confirmation sent: ${label}`, 'info'), 1200);
+        }
+
+        // Universal tile layer creator — no OSM, no rate limits
+        function createSafeTileLayer(url, attribution, maxZoom) {
+            return L.tileLayer(url, {
+                attribution: attribution,
+                maxZoom: maxZoom || 17
+            });
+        }
+
+        window.onload = function () {
+            updateClock();
+            setInterval(updateClock, 1000);
+            setTimeout(() => {
+                document.getElementById('view-splash').classList.add('hidden');
+                document.getElementById('view-role-selection').classList.remove('hidden');
+            }, 1500);
+        };
+
+        function selectRole(roleName) {
+            document.getElementById('view-role-selection').classList.add('hidden');
+            document.getElementById('view-auth').classList.remove('hidden');
+            showToast(`Selected Role: ${roleName}. Please log in.`, 'success');
+            window.currentRole = roleName;
+            const loginTitle = document.querySelector('#view-auth h2');
+            if (loginTitle) loginTitle.innerText = `Login as ${roleName}`;
+        }
+
+        function updateClock() {
+            const now = new Date();
+            const hrs = now.getHours().toString().padStart(2, '0');
+            const mins = now.getMinutes().toString().padStart(2, '0');
+            const clockEl = document.getElementById('mobile-clock');
+            if (clockEl) clockEl.innerText = `${hrs}:${mins}`;
+        }
+
+        function togglePhoneMode() {
+            document.body.classList.toggle('full-mode');
+            const btn = document.getElementById('view-mode-btn');
+            if (document.body.classList.contains('full-mode')) {
+                btn.innerHTML = `<i class="fa-solid fa-mobile"></i> <span>Phone POV Mode</span>`;
+            } else {
+                btn.innerHTML = `<i class="fa-solid fa-mobile-screen"></i> <span>Expand to Full View</span>`;
+            }
+        }
+
+        function switchAuthTab(tab) {
+            if (tab === 'login') {
+                document.getElementById('auth-form-login').classList.remove('hidden');
+                document.getElementById('auth-form-register').classList.add('hidden');
+                document.getElementById('auth-tab-login').className = "w-1/2 py-2 rounded-xl bg-white text-slate-900 shadow-sm";
+                document.getElementById('auth-tab-register').className = "w-1/2 py-2 rounded-xl text-slate-500";
+            } else {
+                document.getElementById('auth-form-login').classList.add('hidden');
+                document.getElementById('auth-form-register').classList.remove('hidden');
+                document.getElementById('auth-tab-register').className = "w-1/2 py-2 rounded-xl bg-white text-slate-900 shadow-sm";
+                document.getElementById('auth-tab-login').className = "w-1/2 py-2 rounded-xl text-slate-500";
+            }
+        }
+
+        function handleLoginSubmit(e) {
+            e.preventDefault();
+            document.getElementById('view-auth').classList.add('hidden');
+            document.getElementById('app-header').classList.remove('hidden');
+            document.getElementById('app-nav').classList.remove('hidden');
+            navigateTo('home');
+            showToast("Welcome back to BundokBuddy!", "success");
+            renderHomeFeatured();
+            renderAllHikes();
+            renderGovernmentOffices();
+            updateSubscriptionUI();
+        }
+
+        function navigateTo(viewId) {
+            const views = ['view-home', 'view-explore', 'view-hikers-map', 'view-government', 'view-detail', 'view-homestay-detail', 'view-transport-detail', 'view-guide-detail', 'view-hike-tracker', 'view-checklist', 'view-profile'];
+            views.forEach(v => { const el = document.getElementById(v); if (el) el.classList.add('hidden'); });
+            const target = document.getElementById('view-' + viewId);
+            if (target) target.classList.remove('hidden');
+
+            document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+                btn.classList.remove('text-budok-700', 'font-bold');
+                btn.classList.add('text-slate-400', 'font-medium');
+            });
+            const activeNav = document.getElementById('nav-' + viewId);
+            if (activeNav) {
+                activeNav.classList.add('text-budok-700', 'font-bold');
+                activeNav.classList.remove('text-slate-400', 'font-medium');
+            }
+
+            document.getElementById('main-container').scrollTop = 0;
+
+            if (viewId === 'home') renderHomeFeatured();
+            if (viewId === 'explore') renderExploreGrid();
+            if (viewId === 'hikers-map') initHikersNearbyMap();
+            if (viewId === 'government') renderGovernmentOffices();
+        }
+
+        function renderMountainImageCard(m) {
+            const isSaved = savedMountainIds.includes(m.mountain_id);
+            return `
+        <div class="white-card white-card-hover rounded-3xl overflow-hidden transition-all">
+          <div class="relative h-36 w-full bg-slate-200">
+            <img src="${m.image}" alt="${m.name}" class="w-full h-full object-cover">
+            <span class="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full font-extrabold text-[9px] bg-budok-600 text-white shadow-md">${m.current_status}</span>
+            <span class="absolute top-2.5 right-2.5 px-2.5 py-0.5 rounded-full font-bold text-[9px] bg-slate-900/80 backdrop-blur-md text-white">${m.difficulty}</span>
+          </div>
+          <div class="p-4 space-y-2">
+            <div class="flex items-start justify-between">
+              <div>
+                <h3 onclick="openMountainDetail('${m.mountain_id}')" class="text-base font-extrabold text-slate-900 hover:text-budok-700 cursor-pointer">${m.name}</h3>
+                <p class="text-[10px] text-slate-500"><i class="fa-solid fa-location-dot text-budok-600 mr-1"></i>${m.municipality}, ${m.province}</p>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <button onclick="toggleSaveMountain('${m.mountain_id}')" class="text-slate-400 hover:text-budok-600 text-xs">
+                  <i class="${isSaved ? 'fa-solid text-budok-600' : 'fa-regular'} fa-bookmark"></i>
+                </button>
+                <span class="font-bold text-xs text-amber-600">⭐ ${m.average_rating}</span>
+              </div>
+            </div>
+            <p class="text-[11px] text-slate-600 line-clamp-2">${m.mountain_description}</p>
+            <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px]">
+              <span class="text-slate-500">MASL: <b>${m.elevation}m</b> &bull; <b>${m.estimated_duration}</b></span>
+              <button onclick="openMountainDetail('${m.mountain_id}')" class="px-3 py-1.5 rounded-xl bg-budok-600 text-white font-bold text-xs">View Trail Hub</button>
+            </div>
+          </div>
+        </div>
+      `;
+        }
+
+        function renderHomeFeatured() {
+            const featured = mountains.filter(m => m.featured);
+            document.getElementById('home-featured-grid').innerHTML = featured.map(m => renderMountainImageCard(m)).join('');
+        }
+
+        function renderExploreGrid() {
+            document.getElementById('all-hikes-grid').innerHTML = mountains.map(m => renderMountainImageCard(m)).join('');
+            document.getElementById('filtered-count').innerText = mountains.length;
+        }
+
+        function openMountainDetail(id) {
+            const m = mountains.find(item => item.mountain_id === id);
+            if (!m) return;
+            currentSelectedMountain = m;
+            navigateTo('detail');
+
+            const setTxt = (elId, txt) => { const el = document.getElementById(elId); if (el) el.innerText = txt; };
+            const setSrc = (elId, src) => { const el = document.getElementById(elId); if (el) el.src = src; };
+
+            setTxt('detail-name', m.name);
+            setSrc('detail-hero-image', m.image);
+            setTxt('detail-mountain-desc', m.mountain_description);
+            setTxt('detail-elevation', `${m.elevation} MASL`);
+            setTxt('detail-duration', m.estimated_duration);
+            setTxt('detail-distance', `${m.distance} km`);
+            setTxt('detail-rating', `⭐ ${m.average_rating} (${m.review_count})`);
+            setTxt('detail-municipality', m.municipality);
+            setTxt('detail-coords', `${m.latitude}° N, ${m.longitude}° E`);
+            setTxt('detail-status-badge', m.current_status);
+            setTxt('detail-difficulty-badge', m.difficulty);
+            setTxt('detail-trail-desc', m.trail_description);
+            setTxt('detail-permit-info', m.status_message);
+
+            const landmarks = m.route_landmarks || [
+                { point: "Trailhead Base", desc: "Registration Desk & Briefing" },
+                { point: "Forest Ascent", desc: "Shaded tree trail" },
+                { point: "Summit Viewpoint", desc: "Top panoramic vista" }
+            ];
+            const lmEl = document.getElementById('detail-route-landmarks');
+            if (lmEl) {
+                lmEl.innerHTML = landmarks.map((l, i) => `
+        <div class="flex items-center gap-2">
+          <span class="w-5 h-5 rounded-full bg-budok-600 text-white font-bold text-[9px] flex items-center justify-center shrink-0">${i + 1}</span>
+          <div>
+            <span class="font-bold text-slate-900 block">${l.point}</span>
+            <span class="text-[9px] text-slate-500">${l.desc}</span>
+          </div>
+        </div>
+      `).join('');
+            }
+
+            const hsCards = (m.homestays || [
+                { id: "hs-default", name: `${m.municipality} Eco Lodge`, price: "₱450/night", image: "https://images.unsplash.com/photo-1587061949409-02df41d5e562?auto=format&fit=crop&w=400&q=80", dist: "0.5 km to trailhead", desc: "Local Bukidnon homestay accommodation." }
+            ]).map(h => `
+        <div class="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-100 flex items-center gap-3.5 shadow-sm">
+            <img src="${h.image}" class="w-16 h-16 rounded-2xl object-cover shrink-0 border border-slate-200/50 shadow-sm">
+            <div class="flex-1 min-w-0 flex flex-col justify-center space-y-0.5">
+                <span class="font-extrabold text-slate-900 text-sm leading-snug truncate block">${h.name}</span>
+                <span class="text-slate-400 font-medium text-xs block">${h.dist}</span>
+                <span class="text-emerald-600 font-extrabold text-sm block">${h.price}</span>
+            </div>
+            <div class="flex flex-col gap-1.5 shrink-0">
+                <button onclick="openHomestayDetail('${m.mountain_id}', '${h.id}')" class="px-3 py-1.5 rounded-xl bg-slate-200 text-slate-700 font-bold text-[10px] hover:bg-slate-300">View</button>
+                <button onclick="openHomestayDetail('${m.mountain_id}', '${h.id}'); setTimeout(() => { const btn = document.getElementById('hs-book-btn-sticky'); if(btn) btn.focus(); }, 300);" class="px-3 py-1.5 rounded-xl bg-budok-600 text-white font-bold text-[10px] hover:bg-budok-700 shadow-md shadow-budok-600/20">
+                    <i class="fa-solid fa-calendar-check mr-0.5"></i> Book
+                </button>
+            </div>
+        </div>
+      `).join('');
+            const hsEl = document.getElementById('detail-homestays-cards');
+            if (hsEl) hsEl.innerHTML = hsCards;
+
+            const trCards = (m.transports || [
+                { id: "tr-default", name: `${m.municipality} Mountain Shuttle`, driverName: "Kuya Datu", driverRating: "4.8", trips: "120", vehicleImg: "https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&w=400&q=80", vehicleDesc: "Local Mountain Shuttle", fare: "₱150", route: "Town Center -> Trailhead" }
+            ]).map(t => `
+        <div class="p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-2 text-xs">
+          <img src="${t.vehicleImg}" class="w-12 h-12 rounded-xl object-cover shrink-0">
+          <div class="flex-1">
+            <span class="font-bold text-slate-900 block text-[11px]">${t.name}</span>
+            <span class="text-[9px] text-slate-500">Driver: ${t.driverName} &bull; <b>Fare: ${t.fare}</b></span>
+          </div>
+          <button onclick="openTransportDetail('${m.mountain_id}', '${t.id}')" class="px-2.5 py-1 rounded-xl bg-slate-800 text-white font-bold text-[10px] shrink-0">VIEW SERVICE</button>
+        </div>
+      `).join('');
+            const trEl = document.getElementById('detail-transport-cards');
+            if (trEl) trEl.innerHTML = trCards;
+
+            const agency = m.agency || VERIFIED_GOVERNMENT_OFFICES[0];
+            const agEl = document.getElementById('detail-agency-card');
+            if (agEl) {
+                agEl.innerHTML = `
+        <div class="flex items-center gap-2">
+          <img src="${agency.image}" class="w-10 h-10 rounded-xl object-cover shrink-0">
+          <div>
+            <span class="font-extrabold text-slate-900 block">${agency.name}</span>
+            <span class="text-[9px] text-slate-500">${agency.address}</span>
+          </div>
+        </div>
+        <div class="text-[9px] text-slate-600">📞 Contact: ${agency.contact} &bull; 🕐 ${agency.hours}</div>
+        <button onclick="navigateTo('government')" class="w-full py-1.5 rounded-xl bg-amber-100 text-amber-800 font-bold text-[10px]">View Agency Location</button>
+      `;
+            }
+
+            const gdEl = document.getElementById('detail-guides-list');
+            if (gdEl) {
+                gdEl.innerHTML = `
+        <div onclick="openGuideDetail('${m.municipality}')"
+            class="p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs cursor-pointer hover:border-budok-500 hover:bg-budok-50 transition-all group">
+          <div class="flex items-center gap-2.5">
+            <div class="w-10 h-10 rounded-2xl bg-budok-100 text-budok-700 flex items-center justify-center">
+                <i class="fa-solid fa-person-hiking text-lg"></i>
+            </div>
+            <div>
+                <span class="font-bold text-slate-900 block group-hover:text-budok-700">${m.municipality} Local Trekkers Guild</span>
+                <span class="text-[10px] text-budok-700">LGU Accredited Guide Group &bull; 12 Members</span>
+            </div>
+          </div>
+          <div class="flex flex-col items-end gap-0.5">
+            <span class="font-bold text-amber-600 text-[11px]">⭐ 4.9</span>
+            <span class="text-[9px] text-slate-400 font-semibold group-hover:text-budok-600">View Details →</span>
+          </div>
+        </div>
+      `;
+            }
+
+            setTimeout(() => { initDetailMap(m.latitude, m.longitude, m.name); }, 100);
+        }
+
+        function openGuideDetail(municipality) {
+            const key = municipality.toLowerCase().includes('malaybalay') ? 'malaybalay' : 'malaybalay';
+            const g = GUIDE_GUILDS[key];
+            if (!g) { showToast("Guide guild details coming soon.", "info"); return; }
+            navigateTo('guide-detail');
+
+            const setTxt = (id, txt) => { const el = document.getElementById(id); if (el) el.innerText = txt; };
+            const setSrc = (id, src) => { const el = document.getElementById(id); if (el) el.src = src; };
+
+            setSrc('gd-hero-img', g.image);
+            setTxt('gd-name', g.name);
+            setTxt('gd-municipality', g.municipality + ", Bukidnon");
+            setTxt('gd-years', g.years_active + " yrs");
+            setTxt('gd-summits', g.total_summits.toLocaleString());
+            setTxt('gd-size', g.group_size);
+            setTxt('gd-desc', g.desc);
+            setTxt('gd-office', g.office);
+            setTxt('gd-contact', g.contact);
+            setTxt('gd-email', g.email);
+            setTxt('gd-hours', g.hours);
+            setTxt('gd-fee', g.standard_fee);
+
+            document.getElementById('gd-specialties').innerHTML = g.specialties.map(s =>
+                `<span class="px-2.5 py-1 rounded-xl bg-budok-100 text-budok-800 font-bold text-[10px] border border-budok-200">${s}</span>`
+            ).join('');
+
+            document.getElementById('gd-members-list').innerHTML = g.members.map(mem => `
+                <div class="p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-center gap-3 text-xs">
+                    <div class="w-9 h-9 rounded-full bg-budok-600 text-white font-black flex items-center justify-center text-[11px] shrink-0">
+                        ${mem.name.split(' ').map(n => n[0]).slice(0,2).join('')}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <span class="font-bold text-slate-900 block truncate">${mem.name}</span>
+                        <span class="text-[10px] text-slate-500 block">${mem.role} &bull; ${mem.years} yrs experience</span>
+                        <span class="text-[9px] text-budok-700 font-semibold block truncate">${mem.certs}</span>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('gd-packages-list').innerHTML = g.packages.map(p => `
+                <div class="p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs">
+                    <div class="flex-1">
+                        <span class="font-bold text-slate-900 block">${p.label}</span>
+                        <span class="text-[10px] text-slate-500">${p.desc}</span>
+                    </div>
+                    <span class="font-black text-budok-700 text-xs shrink-0 ml-2">${p.price}</span>
+                </div>
+            `).join('');
+        }
+
+        function openHomestayDetail(mountainId, homestayId) {
+            const m = mountains.find(item => item.mountain_id === mountainId);
+            if (!m) return;
+            const hList = m.homestays || [{ id: "hs-default", name: `${m.municipality} Eco Lodge`, price: "₱450/night", image: "https://images.unsplash.com/photo-1587061949409-02df41d5e562?auto=format&fit=crop&w=400&q=80", dist: "0.5 km to trailhead", desc: "Local Bukidnon homestay accommodation." }];
+            const h = hList.find(item => item.id === homestayId) || hList[0];
+
+            currentSelectedHomestay = h;
+            navigateTo('homestay-detail');
+
+            const setTxt = (elId, txt) => { const el = document.getElementById(elId); if (el) el.innerText = txt; };
+            const setSrc = (elId, src) => { const el = document.getElementById(elId); if (el) el.src = src; };
+
+            setTxt('hs-detail-name', h.name);
+            setSrc('hs-detail-img-main', h.image);
+            setTxt('hs-detail-price', h.price);
+            setTxt('hs-floating-price-badge', h.price);
+            setTxt('hs-detail-price-sticky', `${h.price} / night`);
+            setTxt('hs-detail-dist', `${h.dist} from ${m.name} Trailhead`);
+            setTxt('hs-detail-desc', h.desc || "Wake up to mountain air and slow mornings! Designed for travelers who value comfort and local character.");
+
+            const gallery = h.gallery || [h.image];
+            const gtEl = document.getElementById('hs-gallery-thumbs');
+            if (gtEl) {
+                gtEl.innerHTML = gallery.map(img => `
+          <img src="${img}" class="w-14 h-14 rounded-xl object-cover border border-slate-200 shrink-0 cursor-pointer hover:border-budok-500" onclick="const mainImg=document.getElementById('hs-detail-img-main'); if(mainImg) mainImg.src='${img}'">
+        `).join('');
+            }
+
+            setTimeout(() => {
+                const mapEl = document.getElementById('homestay-leaflet-map');
+                if (!mapEl) return;
+                mapEl.innerHTML = '';
+                if (homestayMapInstance) homestayMapInstance.remove();
+                homestayMapInstance = L.map(mapEl, { zoomControl: false }).setView([h.lat || m.latitude, h.lng || m.longitude], 13);
+                // Uses OpenTopoMap — safe
+                createSafeTileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', '© OpenTopoMap contributors', 17).addTo(homestayMapInstance);
+                L.marker([h.lat || m.latitude, h.lng || m.longitude]).addTo(homestayMapInstance).bindPopup(`<b>${h.name}</b>`).openPopup();
+                L.marker([m.latitude, m.longitude]).addTo(homestayMapInstance).bindPopup(`<b>${m.name} Trailhead</b>`);
+            }, 100);
+        }
+
+        function switchHsSubTab(tab) {
+            const dEl = document.getElementById('hs-sub-details');
+            const aEl = document.getElementById('hs-sub-amenities');
+            const rEl = document.getElementById('hs-sub-reviews');
+            if (dEl) dEl.classList.add('hidden');
+            if (aEl) aEl.classList.add('hidden');
+            if (rEl) rEl.classList.add('hidden');
+            const tdEl = document.getElementById('hs-tab-details');
+            const taEl = document.getElementById('hs-tab-amenities');
+            const trEl = document.getElementById('hs-tab-reviews');
+            if (tdEl) tdEl.className = "py-2 px-3";
+            if (taEl) taEl.className = "py-2 px-3";
+            if (trEl) trEl.className = "py-2 px-3";
+            if (tab === 'details') { if (dEl) dEl.classList.remove('hidden'); if (tdEl) tdEl.className = "py-2 px-3 border-b-2 border-budok-600 text-budok-800 font-extrabold"; }
+            else if (tab === 'amenities') { if (aEl) aEl.classList.remove('hidden'); if (taEl) taEl.className = "py-2 px-3 border-b-2 border-budok-600 text-budok-800 font-extrabold"; }
+            else if (tab === 'reviews') { if (rEl) rEl.classList.remove('hidden'); if (trEl) trEl.className = "py-2 px-3 border-b-2 border-budok-600 text-budok-800 font-extrabold"; }
+        }
+
+        function openTransportDetail(mountainId, transportId) {
+            const m = mountains.find(item => item.mountain_id === mountainId);
+            if (!m) return;
+            const tList = m.transports || [{ id: "tr-default", name: `${m.municipality} Mountain Shuttle`, driverName: "Kuya Datu", driverRating: "4.8", trips: "120", vehicleImg: "https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&w=400&q=80", vehicleDesc: "Local Mountain Shuttle", fare: "₱150", route: "Town Center -> Trailhead" }];
+            const t = tList.find(item => item.id === transportId) || tList[0];
+            currentSelectedTransport = t;
+            navigateTo('transport-detail');
+
+            const setTxt = (elId, txt) => { const el = document.getElementById(elId); if (el) el.innerText = txt; };
+            const setSrc = (elId, src) => { const el = document.getElementById(elId); if (el) el.src = src; };
+
+            setTxt('tr-driver-name', t.driverName);
+            const tsEl = document.getElementById('tr-driver-stats');
+            if (tsEl) tsEl.innerHTML = `⭐ ${t.driverRating} Rating &bull; ${t.trips} Verified Trips`;
+            setSrc('tr-vehicle-img', t.vehicleImg);
+            setTxt('tr-vehicle-desc', `${t.vehicleDesc} | Route: ${t.route} | Fare: ${t.fare}`);
+
+            setTimeout(() => {
+                const mapEl = document.getElementById('transport-leaflet-map');
+                if (!mapEl) return;
+                mapEl.innerHTML = '';
+                if (transportMapInstance) transportMapInstance.remove();
+                transportMapInstance = L.map(mapEl, { zoomControl: false }).setView([m.latitude, m.longitude], 12);
+                // Uses OpenTopoMap — safe
+                createSafeTileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', '© OpenTopoMap contributors', 17).addTo(transportMapInstance);
+                L.marker([m.latitude, m.longitude]).addTo(transportMapInstance).bindPopup(`<b>Route Destination: ${m.name}</b>`).openPopup();
+            }, 100);
+
+            setTimeout(() => selectTransportMode('habal-habal'), 150);
+        }
+
+        function selectTransportMode(mode) {
+            const data = TRANSPORT_MODES[mode];
+            if (!data) return;
+
+            selectedTransportMode = mode;
+
+            document.querySelectorAll('.transport-mode-btn').forEach(btn => {
+                const isActive = btn.dataset.mode === mode;
+                btn.className = `transport-mode-btn p-2 rounded-2xl flex flex-col items-center gap-1 transition-all ${
+                    isActive
+                        ? 'bg-budok-600 text-white border-budok-500 shadow-md shadow-budok-600/30'
+                        : 'white-card text-slate-700 hover:border-budok-400'
+                }`;
+                const icon = btn.querySelector('i');
+                if (icon) {
+                    icon.className = `${icon.classList[0]} ${icon.classList[1]} ${isActive ? 'text-white' : (
+                        mode === 'habal-habal' ? 'text-budok-600' :
+                        mode === 'van' ? 'text-teal-600' :
+                        mode === 'multicab' ? 'text-amber-600' : 'text-indigo-600'
+                    )} text-base`;
+                }
+            });
+
+            const setTxt = (id, txt) => { const el = document.getElementById(id); if (el) el.innerText = txt; };
+            const setSrc = (id, src) => { const el = document.getElementById(id); if (el) el.src = src; };
+
+            setSrc('tr-driver-img', data.vehicleImg);
+            setTxt('tr-driver-name', data.driverName);
+            const statsEl = document.getElementById('tr-driver-stats');
+            if (statsEl) statsEl.innerHTML = `⭐ ${data.driverRating} Rating &bull; ${data.trips} Verified Trips`;
+
+            setSrc('tr-vehicle-img', data.vehicleImg);
+            setTxt('tr-vehicle-desc', data.vehicleDesc);
+
+            setTxt('tr-fare-economy-label', data.economyLabel);
+            setTxt('tr-fare-economy-price', data.economyPrice);
+            setTxt('tr-fare-economy-desc', data.economyDesc);
+            setTxt('tr-fare-private-label', data.privateLabel);
+            setTxt('tr-fare-private-price', data.privatePrice);
+            setTxt('tr-fare-private-desc', data.privateDesc);
+
+            showToast(`Selected Transport: ${data.label}`, 'success');
+        }
+
+        function initDetailMap(lat, lng, name) {
+            const mapEl = document.getElementById('mountain-map');
+            mapEl.innerHTML = '';
+            const map = L.map(mapEl, { zoomControl: false }).setView([lat, lng], 12);
+            // Uses OpenTopoMap — safe
+            createSafeTileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', '© OpenTopoMap contributors', 17).addTo(map);
+            L.marker([lat, lng]).addTo(map).bindPopup(`<b>${name}</b>`).openPopup();
+        }
+
+        function initHikersNearbyMap() {
+            const mapEl = document.getElementById('hikers-nearby-leaflet-map');
+            mapEl.innerHTML = '';
+            if (mainMapInstance) mainMapInstance.remove();
+
+            mainMapInstance = L.map(mapEl, { zoomControl: false }).setView([8.1574, 125.1278], 10);
+
+            const initial = MAP_LAYERS['standard'];
+            // Uses OpenTopoMap — safe, no OSM blocks
+            currentTileLayer = createSafeTileLayer(initial.url, initial.attribution, initial.maxZoom).addTo(mainMapInstance);
+            currentPerspective = 'standard';
+
+            document.querySelectorAll('.map-perspective-btn').forEach(btn => {
+                const isActive = btn.dataset.perspective === 'standard';
+                btn.className = `map-perspective-btn px-3 py-1.5 rounded-xl shrink-0 transition-all ${isActive ? 'bg-budok-600 text-white shadow-sm' : 'bg-white border border-slate-300 text-slate-700'}`;
+            });
+
+            L.marker([8.1574, 125.1278]).addTo(mainMapInstance).bindPopup("<b>Me (Juan)</b><br>Location: Malaybalay City").openPopup();
+
+            mountains.forEach(m => {
+                L.marker([m.latitude, m.longitude]).addTo(mainMapInstance).bindPopup(`<b>🏔️ ${m.name}</b><br>${m.municipality} (${m.elevation} MASL)`);
+            });
+
+            VERIFIED_GOVERNMENT_OFFICES.forEach(o => {
+                L.marker([o.lat, o.lng]).addTo(mainMapInstance).bindPopup(`<b>🏛️ ${o.name}</b><br>${o.address}`);
+            });
+        }
+
+        function setMapPerspective(type) {
+            if (!mainMapInstance) return;
+            if (currentPerspective === type && currentTileLayer) { showToast(`Already viewing: ${type.toUpperCase()}`); return; }
+            const layerConfig = MAP_LAYERS[type];
+            if (!layerConfig) return;
+
+            if (currentTileLayer) mainMapInstance.removeLayer(currentTileLayer);
+
+            currentTileLayer = L.tileLayer(layerConfig.url, {
+                attribution: layerConfig.attribution,
+                maxZoom: layerConfig.maxZoom
+            }).addTo(mainMapInstance);
+
+            if (type === '3d') {
+                const hillshade = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}', { opacity: 0.4, maxZoom: 16 }).addTo(mainMapInstance);
+                currentTileLayer = hillshade;
+            }
+
+            currentPerspective = type;
+            document.querySelectorAll('.map-perspective-btn').forEach(btn => {
+                const isActive = btn.dataset.perspective === type;
+                btn.className = `map-perspective-btn px-3 py-1.5 rounded-xl shrink-0 transition-all ${isActive ? 'bg-budok-600 text-white shadow-sm' : 'bg-white border border-slate-300 text-slate-700'}`;
+            });
+            showToast(`Map perspective: ${type.toUpperCase()}`, 'success');
+        }
+
+        function toggleMapLayer(layerType) { showToast(`Toggled map layer: ${layerType.toUpperCase()}`); }
+        function togglePrivacySettingsModal() { document.getElementById('privacy-settings-modal').classList.toggle('hidden'); }
+
+        function enableLocationSharing() {
+            isLocationSharingOn = true;
+            document.getElementById('sharing-banner').classList.remove('hidden');
+            document.getElementById('header-sharing-indicator').classList.remove('hidden');
+            document.getElementById('privacy-toggle-location').checked = true;
+            togglePrivacySettingsModal();
+            showToast("Location Sharing is now ON for nearby hikers.", "success");
+        }
+
+        function stopSharingLocation() {
+            isLocationSharingOn = false;
+            document.getElementById('sharing-banner').classList.add('hidden');
+            document.getElementById('header-sharing-indicator').classList.add('hidden');
+            document.getElementById('privacy-toggle-location').checked = false;
+            showToast("Location sharing turned OFF.", "info");
+        }
+
+        function handlePrivacyToggleChange(e) { if (e.target.checked) enableLocationSharing(); else stopSharingLocation(); }
+        function openEmergencySOSHub() { document.getElementById('emergency-sos-modal').classList.remove('hidden'); }
+        function closeEmergencySOSHub() { document.getElementById('emergency-sos-modal').classList.add('hidden'); }
+
+        function switchSOSTab(tab) {
+            document.getElementById('sos-view-panic').classList.add('hidden');
+            document.getElementById('sos-view-type').classList.add('hidden');
+            document.getElementById('sos-view-contacts').classList.add('hidden');
+            document.getElementById('sos-tab-panic').className = "w-1/3 py-2 rounded-xl text-slate-400";
+            document.getElementById('sos-tab-type').className = "w-1/3 py-2 rounded-xl text-slate-400";
+            document.getElementById('sos-tab-contacts').className = "w-1/3 py-2 rounded-xl text-slate-400";
+            if (tab === 'panic') {
+                document.getElementById('sos-view-panic').classList.remove('hidden');
+                document.getElementById('sos-tab-panic').className = "w-1/3 py-2 rounded-xl bg-red-600 text-white shadow-md";
+            } else if (tab === 'type') {
+                document.getElementById('sos-view-type').classList.remove('hidden');
+                document.getElementById('sos-tab-type').className = "w-1/3 py-2 rounded-xl bg-red-600 text-white shadow-md";
+            } else if (tab === 'contacts') {
+                document.getElementById('sos-view-contacts').classList.remove('hidden');
+                document.getElementById('sos-tab-contacts').className = "w-1/3 py-2 rounded-xl bg-red-600 text-white shadow-md";
+            }
+        }
+
+        function triggerPanicBroadcast() {
+            showToast("🚨 BROADCASTING DISTRESS SIGNAL TO SATELLITE & CDRRMO...", "danger");
+            setTimeout(() => { showToast("✅ Emergency Signal Received by Bukidnon Rescue Team!", "success"); }, 2000);
+        }
+
+        function selectEmergencyType(typeLabel) {
+            showToast(`🚨 Distress Alert Routed: ${typeLabel}`, "danger");
+            setTimeout(() => { closeEmergencySOSHub(); showToast("Connecting to nearest Mountain Rescue Unit...", "info"); }, 1500);
+        }
+
+        function startHikeMode() {
+            if (!currentSelectedMountain) currentSelectedMountain = mountains[0];
+            navigateTo('hike-tracker');
+            document.getElementById('tracker-mountain-title').innerText = `Navigating ${currentSelectedMountain.name}`;
+            setTimeout(() => {
+                const mapEl = document.getElementById('tracker-map');
+                mapEl.innerHTML = '';
+                if (trackerMapInstance) trackerMapInstance.remove();
+                trackerMapInstance = L.map(mapEl, { zoomControl: false }).setView([currentSelectedMountain.latitude, currentSelectedMountain.longitude], 13);
+                // Uses OpenTopoMap — safe
+                createSafeTileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', '© OpenTopoMap contributors', 17).addTo(trackerMapInstance);
+                L.marker([currentSelectedMountain.latitude, currentSelectedMountain.longitude]).addTo(trackerMapInstance);
+            }, 100);
+            if (hikeTimerInterval) clearInterval(hikeTimerInterval);
+            hikeTimerInterval = setInterval(() => {
+                hikeSeconds++;
+                const hrs = Math.floor(hikeSeconds / 3600).toString().padStart(2, '0');
+                const mins = Math.floor((hikeSeconds % 3600) / 60).toString().padStart(2, '0');
+                const secs = (hikeSeconds % 60).toString().padStart(2, '0');
+                document.getElementById('tracker-timer').innerText = `${hrs}:${mins}:${secs}`;
+            }, 1000);
+        }
+
+        function stopHikeMode() {
+            if (hikeTimerInterval) clearInterval(hikeTimerInterval);
+            if (isLocationSharingOn) { if (confirm("Your hike has ended. Stop sharing your location?")) stopSharingLocation(); }
+            navigateTo('home');
+        }
+
+        function finishHikeSimulation() { stopHikeMode(); showToast("🎉 Summit logged! Achievement saved to profile.", "success"); }
+
+        function renderGovernmentOffices() {
+            document.getElementById('government-offices-grid').innerHTML = VERIFIED_GOVERNMENT_OFFICES.map(o => `
+        <div class="white-card p-4 rounded-3xl space-y-3">
+          <div class="relative h-28 w-full rounded-2xl overflow-hidden bg-slate-200">
+            <img src="${o.image}" class="w-full h-full object-cover">
+            <span class="absolute top-2 left-2 text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 shadow">Verified LGU Office</span>
+          </div>
+          <div>
+            <h3 class="text-sm font-extrabold text-slate-900">${o.name}</h3>
+            <p class="text-[10px] text-slate-500"><i class="fa-solid fa-location-dot mr-1 text-budok-600"></i>${o.address}</p>
+          </div>
+          <div class="bg-slate-50 p-2.5 rounded-xl text-[10px] text-slate-600 space-y-1 border border-slate-200">
+            <div>📞 <b>Contact:</b> ${o.contact}</div>
+            <div>🕐 <b>Hours:</b> ${o.hours}</div>
+          </div>
+        </div>
+      `).join('');
+        }
+
+        
+
+        function toggleAdminModal() { document.getElementById('admin-modal').classList.toggle('hidden'); }
+
+
+        // ===== WEATHER MODAL =====
+    const WEATHER_DATA = [
+        { name: "Malaybalay City", icon: "fa-sun", color: "text-amber-500", temp: "24°C", cond: "Clear & Sunny", status: "FAVORABLE", statusColor: "bg-budok-500" },
+        { name: "Lantapan (Mt. Kitanglad)", icon: "fa-cloud-sun", color: "text-amber-400", temp: "19°C", cond: "Partly Cloudy", status: "FAVORABLE", statusColor: "bg-budok-500" },
+        { name: "Impasug-ong", icon: "fa-cloud", color: "text-slate-500", temp: "22°C", cond: "Overcast", status: "CAUTION", statusColor: "bg-amber-500" },
+        { name: "Manolo Fortich", icon: "fa-sun", color: "text-amber-500", temp: "26°C", cond: "Sunny", status: "FAVORABLE", statusColor: "bg-budok-500" },
+        { name: "Valencia City", icon: "fa-cloud-sun", color: "text-amber-400", temp: "25°C", cond: "Partly Cloudy", status: "FAVORABLE", statusColor: "bg-budok-500" },
+        { name: "Talakag (Mindamora)", icon: "fa-cloud-showers-heavy", color: "text-blue-500", temp: "20°C", cond: "Light Rain", status: "CAUTION", statusColor: "bg-amber-500" },
+        { name: "Pangantucan (Napalit Lake)", icon: "fa-smog", color: "text-slate-400", temp: "18°C", cond: "Foggy", status: "RESTRICTED", statusColor: "bg-red-500" }
+    ];
+
+    function openWeatherModal() {
+        const list = document.getElementById('weather-list');
+        list.innerHTML = WEATHER_DATA.map(w => `
+            <div class="flex items-center justify-between p-3 rounded-2xl border border-slate-200 bg-slate-50">
+                <div class="flex items-center gap-2.5">
+                    <span class="w-9 h-9 rounded-xl bg-white border border-slate-200 flex items-center justify-center">
+                        <i class="fa-solid ${w.icon} ${w.color}"></i>
+                    </span>
+                    <div>
+                        <b class="text-[11px] text-slate-900 block">${w.name}</b>
+                        <span class="text-[9px] text-slate-500">${w.cond}</span>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <span class="text-sm font-black text-slate-800 block">${w.temp}</span>
+                    <span class="text-[8px] px-1.5 py-0.5 rounded-md ${w.statusColor} text-white font-extrabold">${w.status}</span>
+                </div>
+            </div>
+        `).join('');
+        document.getElementById('weather-modal').classList.remove('hidden');
+    }
+
+    function closeWeatherModal() {
+        document.getElementById('weather-modal').classList.add('hidden');
+    }
+
+        function handleHomestayBookingSubmit(e) {
+            if (e) e.preventDefault();
+            if (!currentSelectedHomestay) {
+                showToast('Please select a homestay first.', 'error');
+                return;
+            }
+            openPaymentModal('HOMESTAY', currentSelectedHomestay.name, currentSelectedHomestay.price || '₱450/night');
+        }
+
+        function handleTransportBookingSubmit(e) {
+            if (e) e.preventDefault();
+            const mode = TRANSPORT_MODES[selectedTransportMode] || TRANSPORT_MODES['habal-habal'];
+            openPaymentModal('TRANSPORT', mode.label, mode.privatePrice);
+        }
+
+        function toggleSaveMountain(id) {
+            if (savedMountainIds.includes(id)) {
+                savedMountainIds = savedMountainIds.filter(i => i !== id);
+                showToast("Removed from saved trails", "info");
+            } else {
+                savedMountainIds.push(id);
+                showToast("Saved trail to bookmarks!", "success");
+            }
+            localStorage.setItem('budok_saved', JSON.stringify(savedMountainIds));
+            renderExploreGrid();
+        }
+
+        function toggleSaveCurrentMountain() { if (currentSelectedMountain) toggleSaveMountain(currentSelectedMountain.mountain_id); }
+
+        function filterMountains() {
+            const query = document.getElementById('global-search-input').value.toLowerCase();
+            const filtered = mountains.filter(m => m.name.toLowerCase().includes(query) || m.municipality.toLowerCase().includes(query) || (m.barangay && m.barangay.toLowerCase().includes(query)));
+            document.getElementById('all-hikes-grid').innerHTML = filtered.map(m => renderMountainImageCard(m)).join('');
+            document.getElementById('filtered-count').innerText = filtered.length;
+        }
+
+        function filterByTown(townKey) {
+            const filtered = mountains.filter(m => m.municipality.toLowerCase().includes(townKey.toLowerCase()));
+            document.getElementById('all-hikes-grid').innerHTML = filtered.map(m => renderMountainImageCard(m)).join('');
+            document.getElementById('filtered-count').innerText = filtered.length;
+            navigateTo('explore');
+            showToast(`Filtered destinations in ${townKey}`, "info");
+        }
+
+        function setCategoryFilter(cat) {
+            const filtered = mountains.filter(m => m.type === cat);
+            document.getElementById('all-hikes-grid').innerHTML = filtered.map(m => renderMountainImageCard(m)).join('');
+            document.getElementById('filtered-count').innerText = filtered.length;
+            showToast(`Category filter: ${cat}`);
+        }
+
+        function resetFilters() { document.getElementById('global-search-input').value = ''; renderExploreGrid(); }
+
+        function openGuideModal() {
+            if (!currentSelectedMountain) { showToast("Select a destination first.", "info"); return; }
+            const mountain = currentSelectedMountain.name;
+            const guild = `${currentSelectedMountain.municipality} Local Trekkers Guild`;
+            document.getElementById('booking-mountain-name').value = `${mountain} — ${guild}`;
+            document.getElementById('guide-modal').classList.remove('hidden');
+        }
+
+        function closeGuideModal() { document.getElementById('guide-modal').classList.add('hidden'); }
+
+        function handleGuideBookingSubmit(e) {
+            if (e) e.preventDefault();
+            const nameEl = document.getElementById('booking-mountain-name');
+            const mountainName = nameEl ? nameEl.value : 'Selected Mountain';
+            const guide = GUIDE_GUILDS['malaybalay'];
+            closeGuideModal();
+            openPaymentModal('GUIDE', `${guide.name} — ${mountainName}`, guide.standard_fee);
+        }
+
+        function getUserLocation() { showToast("GPS updated position relative to Bukidnon", "success"); }
+
+        function showToast(msg, type = "info") {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            let border = "border-budok-500 bg-white text-budok-900 shadow-xl";
+            if (type === "danger") border = "border-red-500 bg-white text-red-900 shadow-xl";
+            toast.className = `p-3 rounded-2xl border text-[11px] font-bold shadow-2xl backdrop-blur-md transition-all duration-300 transform translate-y-2 pointer-events-auto ${border}`;
+            toast.innerHTML = `<i class="fa-solid fa-circle-info mr-1.5 text-budok-600"></i> ${msg}`;
+            container.appendChild(toast);
+            setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3000);
+        }
+    </script>
+</body>
+
+</html>
